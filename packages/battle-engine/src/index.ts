@@ -152,8 +152,11 @@ export class Battle {
       return party;
     }
 
+    const isPartySelectionPhase = this.phaseModule.getPhase() === 'party_selection';
+
     return party.map((entry, index) => {
-      const isRevealedPokemon = entry.used || index === 0;
+      const isRevealedPokemon =
+        !isPartySelectionPhase && (entry.used || index === 0);
 
       return {
         accuracy: entry.accuracy,

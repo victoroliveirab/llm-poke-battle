@@ -200,6 +200,60 @@ describe('select_party reasoning requirement', () => {
     expect(player1EntryReasoning?.leadReason).toBe(leadReason);
   });
 
+  it('keeps opponent lead hidden during party_selection and reveals it in game_loop', async () => {
+    const setup = await setupPartySelection();
+
+    await selectPartyController.handle(
+      {
+        room_handle: setup.roomHandle,
+        p1: 'Charizard',
+        p2: 'Raichu',
+        p3: 'Nidoking',
+        p1_reason: 'Lead pressure.',
+        p2_reason: 'Speed control.',
+        p3_reason: 'Coverage option.',
+        lead_reason: 'Charizard is the strongest opener for tempo.',
+      },
+      { sessionState: setup.player1Session },
+    );
+
+    const opponentStateBeforeTransition = await getGameStateController.handle(
+      { room_handle: setup.roomHandle },
+      { sessionState: setup.player2Session },
+    );
+    const beforePayload = parseJsonPayload(opponentStateBeforeTransition);
+    expect(beforePayload.phase).toBe('party_selection');
+    const hiddenOpponentParty = beforePayload.opponent as Array<
+      Record<string, unknown>
+    >;
+    expect(hiddenOpponentParty[0]?.name).toBe('???');
+
+    await selectPartyController.handle(
+      {
+        room_handle: setup.roomHandle,
+        p1: 'Nidoking',
+        p2: 'Raichu',
+        p3: 'Charizard',
+        p1_reason: 'Lead pressure.',
+        p2_reason: 'Speed control.',
+        p3_reason: 'Coverage option.',
+        lead_reason: 'Nidoking pressures likely openings immediately.',
+      },
+      { sessionState: setup.player2Session },
+    );
+
+    const opponentStateAfterTransition = await getGameStateController.handle(
+      { room_handle: setup.roomHandle },
+      { sessionState: setup.player2Session },
+    );
+    const afterPayload = parseJsonPayload(opponentStateAfterTransition);
+    expect(afterPayload.phase).toBe('game_loop');
+    const revealedOpponentParty = afterPayload.opponent as Array<
+      Record<string, unknown>
+    >;
+    expect(revealedOpponentParty[0]?.name).toBe('Charizard');
+  });
+
   it('returns an error when start_game is called after the game has started', async () => {
     const setup = await setupPartySelection();
 
