@@ -171,6 +171,96 @@ describe('play_move reasoning requirement', () => {
     );
   });
 
+  it('records misses as non-executed attack outcomes with zero damage timeline entries', async () => {
+    const setup = await setupGameLoop();
+    const room = getRoom(setup.roomHandle);
+    if (!room || !room.game) {
+      throw new Error('Expected room game to exist for miss assertions.');
+    }
+
+    const speciesModule = (room.game as unknown as {
+      speciesModule: {
+        bySpecies: Map<
+          string,
+          {
+            moves: Array<{
+              name: string;
+              accuracy: number;
+            }>;
+          }
+        >;
+      };
+    }).speciesModule;
+    const charizard = speciesModule.bySpecies.get('Charizard');
+    const strength = charizard?.moves.find((move) => move.name === 'Strength');
+    if (!strength) {
+      throw new Error('Expected Charizard Strength move in species catalog.');
+    }
+    strength.accuracy = 0;
+
+    const player1Reasoning = 'Testing miss handling for player 1.';
+    const player2Reasoning = 'Testing miss handling for player 2.';
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: player1Reasoning,
+          payload: {
+            attackName: 'Strength',
+          },
+        },
+      },
+      { sessionState: setup.player1Session },
+    );
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: player2Reasoning,
+          payload: {
+            attackName: 'Strength',
+          },
+        },
+      },
+      { sessionState: setup.player2Session },
+    );
+
+    const snapshot = listRoomTurnSnapshots(room, 1)[0];
+    if (!snapshot) {
+      throw new Error('Expected turn 1 snapshot for miss assertions.');
+    }
+
+    expect(snapshot.actions.player1.attackOutcome?.executed).toBe(false);
+    expect(snapshot.actions.player1.attackOutcome?.targetPokemon).toBe('Charizard');
+    expect(snapshot.actions.player1.attackOutcome?.damage).toBe(0);
+    expect(snapshot.actions.player2.attackOutcome?.executed).toBe(false);
+    expect(snapshot.actions.player2.attackOutcome?.targetPokemon).toBe('Charizard');
+    expect(snapshot.actions.player2.attackOutcome?.damage).toBe(0);
+
+    const attackTimeline = snapshot.actions.timeline.filter(
+      (entry) => entry.type === 'attack',
+    );
+    expect(attackTimeline.length).toBe(2);
+    expect(
+      attackTimeline.some(
+        (entry) =>
+          entry.reasoning === player1Reasoning &&
+          entry.damage === 0 &&
+          entry.outcome === 'miss',
+      ),
+    ).toBe(true);
+    expect(
+      attackTimeline.some(
+        (entry) =>
+          entry.reasoning === player2Reasoning &&
+          entry.damage === 0 &&
+          entry.outcome === 'miss',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps reasoning for non-executed attacks and inter-turn replacement switches', async () => {
     const setup = await setupGameLoop();
     const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;
@@ -179,86 +269,69 @@ describe('play_move reasoning requirement', () => {
       throw new Error('Expected joined player ids in session state.');
     }
 
-    const turn1ReasonP1 = 'Turn 1 pressure line from player 1.';
-    const turn1ReasonP2 = 'Turn 1 pressure line from player 2.';
-    await playMoveController.handle(
-      {
-        room_handle: setup.roomHandle,
-        action: {
-          type: 'attack',
-          reasoning: turn1ReasonP1,
-          payload: {
-            attackName: 'Rock Slide',
-          },
-        },
-      },
-      { sessionState: setup.player1Session },
-    );
-    await playMoveController.handle(
-      {
-        room_handle: setup.roomHandle,
-        action: {
-          type: 'attack',
-          reasoning: turn1ReasonP2,
-          payload: {
-            attackName: 'Rock Slide',
-          },
-        },
-      },
-      { sessionState: setup.player2Session },
-    );
+    let faintedEntry: { playerId: string } | undefined;
+    let turnWithFaint = 0;
 
-    const turn2ReasonP1 = 'Turn 2 all-in to force a knockout.';
-    const turn2ReasonP2 = 'Turn 2 all-in to force a knockout.';
-    await playMoveController.handle(
-      {
-        room_handle: setup.roomHandle,
-        action: {
-          type: 'attack',
-          reasoning: turn2ReasonP1,
-          payload: {
-            attackName: 'Rock Slide',
-          },
-        },
-      },
-      { sessionState: setup.player1Session },
-    );
-    await playMoveController.handle(
-      {
-        room_handle: setup.roomHandle,
-        action: {
-          type: 'attack',
-          reasoning: turn2ReasonP2,
-          payload: {
-            attackName: 'Rock Slide',
-          },
-        },
-      },
-      { sessionState: setup.player2Session },
-    );
+    for (let turn = 1; turn <= 8; turn += 1) {
+      const turnReasonP1 = `Turn ${turn} pressure line from player 1.`;
+      const turnReasonP2 = `Turn ${turn} pressure line from player 2.`;
 
-    const roomAfterTurn2 = getRoom(setup.roomHandle);
-    if (!roomAfterTurn2) {
-      throw new Error('Expected room after turn 2.');
-    }
-    const turn2Snapshot = listRoomTurnSnapshots(roomAfterTurn2, 2)[0];
-    if (!turn2Snapshot) {
-      throw new Error('Expected turn 2 snapshot.');
+      await playMoveController.handle(
+        {
+          room_handle: setup.roomHandle,
+          action: {
+            type: 'attack',
+            reasoning: turnReasonP1,
+            payload: {
+              attackName: 'Strength',
+            },
+          },
+        },
+        { sessionState: setup.player1Session },
+      );
+      await playMoveController.handle(
+        {
+          room_handle: setup.roomHandle,
+          action: {
+            type: 'attack',
+            reasoning: turnReasonP2,
+            payload: {
+              attackName: 'Strength',
+            },
+          },
+        },
+        { sessionState: setup.player2Session },
+      );
+
+      const roomAfterTurn = getRoom(setup.roomHandle);
+      if (!roomAfterTurn) {
+        throw new Error(`Expected room after turn ${turn}.`);
+      }
+      const turnSnapshot = listRoomTurnSnapshots(roomAfterTurn, turn)[0];
+      if (!turnSnapshot) {
+        throw new Error(`Expected turn ${turn} snapshot.`);
+      }
+
+      const attackTimeline = turnSnapshot.actions.timeline.filter(
+        (entry) => entry.type === 'attack',
+      );
+      expect(attackTimeline.some((entry) => entry.reasoning === turnReasonP1)).toBe(
+        true,
+      );
+      expect(attackTimeline.some((entry) => entry.reasoning === turnReasonP2)).toBe(
+        true,
+      );
+
+      const fainted = turnSnapshot.actions.fainted[0];
+      if (fainted) {
+        faintedEntry = fainted;
+        turnWithFaint = turn;
+        break;
+      }
     }
 
-    const turn2AttackTimeline = turn2Snapshot.actions.timeline.filter(
-      (entry) => entry.type === 'attack',
-    );
-    expect(turn2AttackTimeline.some((entry) => entry.reasoning === turn2ReasonP1)).toBe(
-      true,
-    );
-    expect(turn2AttackTimeline.some((entry) => entry.reasoning === turn2ReasonP2)).toBe(
-      true,
-    );
-
-    const faintedEntry = turn2Snapshot.actions.fainted[0];
     if (!faintedEntry) {
-      throw new Error('Expected one fainted Pokemon after turn 2.');
+      throw new Error('Expected one fainted Pokemon after repeated guaranteed-hit turns.');
     }
     const faintedSession =
       faintedEntry.playerId === player1Id
@@ -305,23 +378,26 @@ describe('play_move reasoning requirement', () => {
           type: 'attack',
           reasoning: 'Opponent responds to complete the turn.',
           payload: {
-            attackName: 'Rock Slide',
+            attackName: 'Strength',
           },
         },
       },
       { sessionState: otherSession },
     );
 
-    const roomAfterTurn3 = getRoom(setup.roomHandle);
-    if (!roomAfterTurn3) {
-      throw new Error('Expected room after turn 3.');
+    const roomAfterReplacementTurn = getRoom(setup.roomHandle);
+    if (!roomAfterReplacementTurn) {
+      throw new Error('Expected room after replacement turn.');
     }
-    const turn3Snapshot = listRoomTurnSnapshots(roomAfterTurn3, 3)[0];
-    if (!turn3Snapshot) {
-      throw new Error('Expected turn 3 snapshot.');
+    const turnAfterReplacementSnapshot = listRoomTurnSnapshots(
+      roomAfterReplacementTurn,
+      turnWithFaint + 1,
+    )[0];
+    if (!turnAfterReplacementSnapshot) {
+      throw new Error('Expected replacement turn snapshot.');
     }
 
-    const replacementSwitchInTimeline = turn3Snapshot.actions.timeline.find(
+    const replacementSwitchInTimeline = turnAfterReplacementSnapshot.actions.timeline.find(
       (entry) =>
         entry.type === 'switch' &&
         entry.playerId === faintedEntry.playerId &&

@@ -159,7 +159,8 @@ export class Battle {
         !isPartySelectionPhase && (entry.used || index === 0);
 
       return {
-        accuracy: entry.accuracy,
+        accuracyStage: entry.accuracyStage,
+        evasionStage: entry.evasionStage,
         health: isRevealedPokemon ? entry.health : null,
         isActive: index === 0,
         name: isRevealedPokemon ? entry.name : '???',

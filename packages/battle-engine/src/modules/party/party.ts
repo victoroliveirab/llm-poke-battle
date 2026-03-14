@@ -20,7 +20,8 @@ export type PartyStats = {
 };
 
 export type PartyEntry = {
-  accuracy: number;
+  accuracyStage: number;
+  evasionStage: number;
   health: number;
   level: number;
   moves: PartyMove[];
@@ -173,7 +174,8 @@ export class Party {
     const stats = this.calculateStats(pokemon);
 
     return {
-      accuracy: 100,
+      accuracyStage: 0,
+      evasionStage: 0,
       health: stats.hp,
       level: this.level,
       moves: pokemon.moves.map((move) => ({

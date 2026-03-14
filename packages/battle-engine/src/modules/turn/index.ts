@@ -151,6 +151,9 @@ const typeChart: Partial<Record<PokemonType, Partial<Record<PokemonType, number>
   },
 };
 
+const MIN_ACCURACY_STAGE = -6;
+const MAX_ACCURACY_STAGE = 6;
+
 export class TurnModule implements EngineModule {
   private pendingActions = new Map<string, SubmitActionCommand['action']>();
   private pendingReplacementPlayers = new Set<string>();
@@ -433,6 +436,33 @@ export class TurnModule implements EngineModule {
       );
     }
 
+    moveState.used += 1;
+    moveState.remaining = Math.max(0, moveState.remaining - 1);
+    events.push({
+      type: 'move.consumed',
+      playerId: attackerAction.playerId,
+      pokemonName: attacker.name,
+      moveName,
+    });
+
+    const attackLanded = this.didAttackLand(
+      move.accuracy,
+      attacker.accuracyStage,
+      defender.evasionStage,
+      context,
+    );
+    if (!attackLanded) {
+      events.push({
+        type: 'attack.missed',
+        playerId: attackerAction.playerId,
+        targetPlayerId: defenderAction.playerId,
+        pokemonName: attacker.name,
+        targetPokemonName: defender.name,
+        moveName,
+      });
+      return false;
+    }
+
     const attackStat =
       move.class === 'physical' ? attacker.stats.attack : attacker.stats.specialAttack;
     const defenseStat =
@@ -455,16 +485,7 @@ export class TurnModule implements EngineModule {
       context,
     );
 
-    moveState.used += 1;
-    moveState.remaining = Math.max(0, moveState.remaining - 1);
     defender.health = Math.max(0, defender.health - damage);
-
-    events.push({
-      type: 'move.consumed',
-      playerId: attackerAction.playerId,
-      pokemonName: attacker.name,
-      moveName,
-    });
 
     events.push({
       type: 'damage.applied',
@@ -601,6 +622,44 @@ export class TurnModule implements EngineModule {
 
     const againstType2 = typeChart[attackType]?.[defenderType2] ?? 1;
     return againstType1 * againstType2;
+  }
+
+  private didAttackLand(
+    moveAccuracy: number,
+    attackerAccuracyStage: number,
+    defenderEvasionStage: number,
+    context: GameContext,
+  ) {
+    const effectiveAccuracy = this.calculateEffectiveAccuracy(
+      moveAccuracy,
+      attackerAccuracyStage,
+      defenderEvasionStage,
+    );
+    return context.random() < effectiveAccuracy;
+  }
+
+  private calculateEffectiveAccuracy(
+    moveAccuracy: number,
+    attackerAccuracyStage: number,
+    defenderEvasionStage: number,
+  ) {
+    const attackerModifier = this.getStageModifier(attackerAccuracyStage);
+    const defenderModifier = this.getStageModifier(defenderEvasionStage);
+    const rawChance = (moveAccuracy / 100) * (attackerModifier / defenderModifier);
+    return Math.max(0, Math.min(1, rawChance));
+  }
+
+  private getStageModifier(stage: number) {
+    const clampedStage = this.clampStage(stage);
+    if (clampedStage >= 0) {
+      return (3 + clampedStage) / 3;
+    }
+    return 3 / (3 + Math.abs(clampedStage));
+  }
+
+  private clampStage(stage: number) {
+    const normalizedStage = Math.trunc(stage);
+    return Math.max(MIN_ACCURACY_STAGE, Math.min(MAX_ACCURACY_STAGE, normalizedStage));
   }
 
   private calculateDamage(

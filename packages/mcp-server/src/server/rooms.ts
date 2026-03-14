@@ -103,6 +103,7 @@ export type TurnActionTimelineEntrySnapshot =
       attackName: string;
       targetPokemon: string | null;
       damage: number;
+      outcome: 'hit' | 'miss' | 'not_executed';
       reasoning: string;
     }
   | {
@@ -653,6 +654,39 @@ function buildTurnActionsSnapshot(
           attackName,
           targetPokemon: event.pokemonName,
           damage: event.damage,
+          outcome: 'hit',
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.missed') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: 0,
+        executed: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: 0,
+          outcome: 'miss',
           reasoning,
         });
       }
@@ -740,6 +774,7 @@ function buildTurnActionsSnapshot(
         attackName: submittedAction.attackName,
         targetPokemon: null,
         damage: 0,
+        outcome: 'not_executed',
         reasoning: submittedAction.reasoning,
       });
     }
@@ -906,6 +941,7 @@ function cloneTurnActionTimelineEntries(
         attackName: entry.attackName,
         targetPokemon: entry.targetPokemon,
         damage: entry.damage,
+        outcome: entry.outcome,
         reasoning: entry.reasoning,
       };
     }

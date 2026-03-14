@@ -28,6 +28,14 @@ export type DomainEvent =
       moveName: string;
     }
   | {
+      type: 'attack.missed';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      moveName: string;
+    }
+  | {
       type: 'damage.applied';
       playerId: string;
       pokemonName: string;

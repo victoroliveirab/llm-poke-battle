@@ -80,6 +80,7 @@ type TurnActionTimelineEntrySnapshot =
       attackName: string;
       targetPokemon: string | null;
       damage: number;
+      outcome?: 'hit' | 'miss' | 'not_executed';
       reasoning: string;
     }
   | {
@@ -452,6 +453,18 @@ function printTurnActions(actions: TurnActionsSnapshot) {
     for (const entry of timeline) {
       if (entry.type === 'attack') {
         const targetPokemon = entry.targetPokemon ?? 'no target';
+        if (entry.outcome === 'miss') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} MISSED | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
+        if (entry.outcome === 'not_executed') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> did not execute | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
         console.log(
           `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} for ${entry.damage} damage | reason: ${entry.reasoning}`,
         );

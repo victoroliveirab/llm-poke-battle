@@ -217,6 +217,13 @@ Game phases:
 - `game_loop`: starts automatically once both players submit valid parties.
 - `game_over`: reached when a winner is decided.
 
+Attack accuracy rules:
+
+- Every attack attempt consumes PP, then performs a hit check.
+- `effective_accuracy = (move_accuracy / 100) * (accuracy_stage_modifier / evasion_stage_modifier)`, clamped to `[0, 1]`.
+- `accuracyStage` and `evasionStage` are per-Pokemon stats initialized at `0` and clamped to `[-6, +6]`.
+- Missed attacks emit a miss outcome, apply no damage, and cannot faint a target.
+
 Privacy/redaction rules:
 
 - Opponent party slots are returned as `REDACTED` until each Pokemon is revealed in battle.
