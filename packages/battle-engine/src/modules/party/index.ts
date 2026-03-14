@@ -79,6 +79,12 @@ export class PartyModule implements EngineModule {
       return [];
     }
 
+    if (event.type === 'battle.stat_stage_changed') {
+      const party = this.getPartyObject(event.playerId);
+      party.applyStatStageDelta(event.pokemonName, event.stat, event.delta);
+      return [];
+    }
+
     return [];
   }
 

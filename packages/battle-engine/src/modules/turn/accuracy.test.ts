@@ -25,6 +25,11 @@ function selectDefaultParties(game: Battle) {
   game.selectParty(PLAYER_TWO_ID, ['Nidoking', 'Raichu', 'Charizard']);
 }
 
+function selectFearowParties(game: Battle) {
+  game.selectParty(PLAYER_ONE_ID, ['Fearow', 'Raichu', 'Charizard']);
+  game.selectParty(PLAYER_TWO_ID, ['Nidoking', 'Raichu', 'Charizard']);
+}
+
 function resolveAttackTurn(game: Battle, playerOneMove: string, playerTwoMove: string) {
   game.selectAction({
     playerID: PLAYER_ONE_ID,
@@ -448,5 +453,149 @@ describe('turn accuracy resolution', () => {
     expect(stagedCritDamageEvent.critical).toBe(true);
     expect(stagedCritDamageEvent.damage).toBeGreaterThan(stagedNonCritDamage);
     expect(stagedCritDamageEvent.damage).toBeLessThan(unstagedNonCritDamage);
+  });
+
+  it('applies Sand Attack on hit and lowers opponent accuracy by one stage', () => {
+    const game = buildBattleWithRandomSequence([
+      0, // Fearow Sand Attack hit check
+      0.99, // Nidoking Fire Blast miss check after accuracy drop
+    ]);
+    selectFearowParties(game);
+
+    const events = resolveAttackTurn(game, 'Sand Attack', 'Fire Blast');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'battle.stat_stage_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.sourcePlayerId === PLAYER_ONE_ID &&
+          event.moveName === 'Sand Attack' &&
+          event.stat === 'accuracy' &&
+          event.delta === -1 &&
+          event.resultingStage === -1,
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID &&
+          event.moveName === 'Sand Attack',
+      ),
+    ).toBe(false);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.missed' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.moveName === 'Sand Attack',
+      ),
+    ).toBe(false);
+
+    const defenderState = game.getStateAsPlayer(PLAYER_TWO_ID) as {
+      player: Array<{ name: string; accuracyStage: number }>;
+    };
+    expect(defenderState.player[0]?.name).toBe('Nidoking');
+    expect(defenderState.player[0]?.accuracyStage).toBe(-1);
+  });
+
+  it('treats Sand Attack as miss when target accuracy stage is already at minimum', () => {
+    const game = buildBattleWithRandomSequence([
+      0, // Fearow Sand Attack hit check
+      0.99, // Nidoking Fire Blast miss check
+    ]);
+    selectFearowParties(game);
+    setActivePokemonStages(game, PLAYER_TWO_ID, { accuracyStage: -6 });
+
+    const events = resolveAttackTurn(game, 'Sand Attack', 'Fire Blast');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.missed' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.moveName === 'Sand Attack',
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'battle.stat_stage_changed' &&
+          event.sourcePlayerId === PLAYER_ONE_ID &&
+          event.moveName === 'Sand Attack',
+      ),
+    ).toBe(false);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID &&
+          event.moveName === 'Sand Attack',
+      ),
+    ).toBe(false);
+
+    const defenderState = game.getStateAsPlayer(PLAYER_TWO_ID) as {
+      player: Array<{ name: string; accuracyStage: number }>;
+    };
+    expect(defenderState.player[0]?.name).toBe('Nidoking');
+    expect(defenderState.player[0]?.accuracyStage).toBe(-6);
+  });
+
+  it('resets all battle stages to zero when a Pokemon switches to the bench', () => {
+    const game = buildBattleWithRandomSequence([
+      0.99, // Nidoking Fire Blast miss check against switched-in Raichu
+    ]);
+    selectDefaultParties(game);
+
+    setActivePokemonStages(game, PLAYER_ONE_ID, {
+      accuracyStage: -2,
+      attackStage: 3,
+      criticalStage: 2,
+      defenseStage: -3,
+      evasionStage: 4,
+      specialAttackStage: -1,
+      specialDefenseStage: 5,
+    });
+
+    game.selectAction({
+      playerID: PLAYER_ONE_ID,
+      type: 'switch',
+      payload: {
+        newPokemon: 'Raichu',
+      },
+    });
+    game.selectAction({
+      playerID: PLAYER_TWO_ID,
+      type: 'attack',
+      payload: {
+        attackName: 'Fire Blast',
+      },
+    });
+
+    const playerState = game.getStateAsPlayer(PLAYER_ONE_ID) as {
+      player: Array<{
+        name: string;
+        accuracyStage: number;
+        attackStage: number;
+        criticalStage: number;
+        defenseStage: number;
+        evasionStage: number;
+        specialAttackStage: number;
+        specialDefenseStage: number;
+      }>;
+    };
+    const benchedCharizard = playerState.player.find(
+      (pokemon) => pokemon.name === 'Charizard',
+    );
+    if (!benchedCharizard) {
+      throw new Error('Expected Charizard to be present in player party.');
+    }
+
+    expect(benchedCharizard.accuracyStage).toBe(0);
+    expect(benchedCharizard.attackStage).toBe(0);
+    expect(benchedCharizard.criticalStage).toBe(0);
+    expect(benchedCharizard.defenseStage).toBe(0);
+    expect(benchedCharizard.evasionStage).toBe(0);
+    expect(benchedCharizard.specialAttackStage).toBe(0);
+    expect(benchedCharizard.specialDefenseStage).toBe(0);
   });
 });

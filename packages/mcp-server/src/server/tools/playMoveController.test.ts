@@ -268,6 +268,115 @@ describe('play_move reasoning requirement', () => {
     ).toBe(true);
   });
 
+  it('records non-damaging landed attacks as executed', async () => {
+    const setup = await setupGameLoop();
+    const room = getRoom(setup.roomHandle);
+    if (!room || !room.game) {
+      throw new Error('Expected room game to exist for non-damaging attack assertions.');
+    }
+
+    const speciesModule = (room.game as unknown as {
+      speciesModule: {
+        bySpecies: Map<
+          string,
+          {
+            moves: Array<{
+              name: string;
+              accuracy: number;
+              power: number;
+              statChanges?: Array<{
+                target: 'self' | 'opponent';
+                stat:
+                  | 'accuracy'
+                  | 'attack'
+                  | 'critical'
+                  | 'defense'
+                  | 'evasion'
+                  | 'specialAttack'
+                  | 'specialDefense';
+                stages: number;
+              }>;
+            }>;
+          }
+        >;
+      };
+    }).speciesModule;
+    const charizard = speciesModule.bySpecies.get('Charizard');
+    const strength = charizard?.moves.find((move) => move.name === 'Strength');
+    if (!strength) {
+      throw new Error('Expected Charizard Strength move in species catalog.');
+    }
+    strength.accuracy = 100;
+    strength.power = 0;
+    strength.statChanges = [
+      {
+        target: 'opponent',
+        stat: 'accuracy',
+        stages: -1,
+      },
+    ];
+
+    const player1Reasoning = 'Use a non-damaging, stat-lowering attack.';
+    const player2Reasoning = 'Mirror non-damaging pressure.';
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: player1Reasoning,
+          payload: {
+            attackName: 'Strength',
+          },
+        },
+      },
+      { sessionState: setup.player1Session },
+    );
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: player2Reasoning,
+          payload: {
+            attackName: 'Strength',
+          },
+        },
+      },
+      { sessionState: setup.player2Session },
+    );
+
+    const snapshot = listRoomTurnSnapshots(room, 1)[0];
+    if (!snapshot) {
+      throw new Error('Expected turn 1 snapshot for non-damaging attack assertions.');
+    }
+
+    expect(snapshot.actions.player1.attackOutcome?.executed).toBe(true);
+    expect(snapshot.actions.player1.attackOutcome?.damage).toBe(0);
+    expect(snapshot.actions.player2.attackOutcome?.executed).toBe(true);
+    expect(snapshot.actions.player2.attackOutcome?.damage).toBe(0);
+
+    const attackTimeline = snapshot.actions.timeline.filter(
+      (entry) => entry.type === 'attack',
+    );
+    expect(attackTimeline.length).toBe(2);
+    expect(
+      attackTimeline.some(
+        (entry) =>
+          entry.playerId === snapshot.actions.player1.playerId &&
+          entry.damage === 0 &&
+          entry.outcome === 'hit',
+      ),
+    ).toBe(true);
+    expect(
+      attackTimeline.some(
+        (entry) =>
+          entry.playerId === snapshot.actions.player2.playerId &&
+          entry.damage === 0 &&
+          entry.outcome === 'hit',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps reasoning for non-executed attacks and inter-turn replacement switches', async () => {
     const setup = await setupGameLoop();
     const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;

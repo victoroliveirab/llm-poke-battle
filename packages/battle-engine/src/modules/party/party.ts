@@ -35,6 +35,15 @@ export type PartyEntry = {
   used: boolean;
 };
 
+type StageStat =
+  | 'accuracy'
+  | 'attack'
+  | 'critical'
+  | 'defense'
+  | 'evasion'
+  | 'specialAttack'
+  | 'specialDefense';
+
 type Params = {
   level: number;
   pokemon: PokemonSpecies[];
@@ -89,6 +98,11 @@ export class Party {
       throw new Error(`Pokemon ${name} not found in party.`);
     }
 
+    const activePokemon = this.pokemon[0];
+    if (activePokemon && activePokemon.name !== name) {
+      this.resetBattleStages(activePokemon.name);
+    }
+
     pokemon.used = true;
     const before = this.pokemon.slice(0, index);
     const after = this.pokemon.slice(index + 1);
@@ -117,6 +131,91 @@ export class Party {
     }
 
     pokemon.health = Math.max(0, pokemon.health - damage);
+  }
+
+  applyStatStageDelta(pokemonName: string, stat: StageStat, delta: number) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    const currentStage = this.getStageValue(pokemon, stat);
+    const nextStage = this.clampStage(currentStage + Math.trunc(delta), stat);
+    this.setStageValue(pokemon, stat, nextStage);
+    return nextStage;
+  }
+
+  resetBattleStages(pokemonName: string) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    pokemon.accuracyStage = 0;
+    pokemon.attackStage = 0;
+    pokemon.criticalStage = 0;
+    pokemon.defenseStage = 0;
+    pokemon.evasionStage = 0;
+    pokemon.specialAttackStage = 0;
+    pokemon.specialDefenseStage = 0;
+  }
+
+  private getStageValue(pokemon: PartyEntry, stat: StageStat) {
+    if (stat === 'accuracy') {
+      return pokemon.accuracyStage;
+    }
+    if (stat === 'attack') {
+      return pokemon.attackStage;
+    }
+    if (stat === 'critical') {
+      return pokemon.criticalStage;
+    }
+    if (stat === 'defense') {
+      return pokemon.defenseStage;
+    }
+    if (stat === 'evasion') {
+      return pokemon.evasionStage;
+    }
+    if (stat === 'specialAttack') {
+      return pokemon.specialAttackStage;
+    }
+    return pokemon.specialDefenseStage;
+  }
+
+  private setStageValue(pokemon: PartyEntry, stat: StageStat, value: number) {
+    if (stat === 'accuracy') {
+      pokemon.accuracyStage = value;
+      return;
+    }
+    if (stat === 'attack') {
+      pokemon.attackStage = value;
+      return;
+    }
+    if (stat === 'critical') {
+      pokemon.criticalStage = value;
+      return;
+    }
+    if (stat === 'defense') {
+      pokemon.defenseStage = value;
+      return;
+    }
+    if (stat === 'evasion') {
+      pokemon.evasionStage = value;
+      return;
+    }
+    if (stat === 'specialAttack') {
+      pokemon.specialAttackStage = value;
+      return;
+    }
+    pokemon.specialDefenseStage = value;
+  }
+
+  private clampStage(stage: number, stat: StageStat) {
+    const normalizedStage = Math.trunc(stage);
+    if (stat === 'critical') {
+      return Math.max(0, normalizedStage);
+    }
+    return Math.max(-6, Math.min(6, normalizedStage));
   }
 
   private calculateStats(pokemon: PokemonSpecies): PartyStats {

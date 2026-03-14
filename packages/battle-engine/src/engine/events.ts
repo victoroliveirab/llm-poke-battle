@@ -45,6 +45,23 @@ export type DomainEvent =
       critical: boolean;
     }
   | {
+      type: 'battle.stat_stage_changed';
+      playerId: string;
+      pokemonName: string;
+      sourcePlayerId: string;
+      moveName: string;
+      stat:
+        | 'accuracy'
+        | 'attack'
+        | 'critical'
+        | 'defense'
+        | 'evasion'
+        | 'specialAttack'
+        | 'specialDefense';
+      delta: number;
+      resultingStage: number;
+    }
+  | {
       type: 'pokemon.fainted';
       playerId: string;
       pokemonName: string;

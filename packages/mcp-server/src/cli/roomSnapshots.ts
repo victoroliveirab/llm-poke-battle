@@ -4,11 +4,22 @@ type SnapshotMove = {
   maxPP: number;
 };
 
+type SnapshotStages = {
+  accuracy: number;
+  attack: number;
+  critical: number;
+  defense: number;
+  evasion: number;
+  specialAttack: number;
+  specialDefense: number;
+};
+
 type SnapshotPokemon = {
   name: string;
   hp: number;
   maxHp: number;
   moves: SnapshotMove[];
+  stages: SnapshotStages;
 };
 
 type BoardPlayerSnapshot = {
@@ -424,24 +435,24 @@ function printTurnSnapshot(snapshot: TurnSnapshot) {
   printTurnActions(snapshot.actions);
   console.log('=== PLAYER 1 ===');
   console.log('');
-  printPokemon('Active Pokemon', snapshot.player1.active);
+  printPokemon('Active Pokemon', snapshot.player1.active, true);
   for (let i = 0; i < snapshot.player1.bench.length; i += 1) {
     const bench = snapshot.player1.bench[i];
     if (!bench) {
       continue;
     }
-    printPokemon(`Bench ${i + 1}`, bench);
+    printPokemon(`Bench ${i + 1}`, bench, false);
   }
 
   console.log('=== PLAYER 2 ===');
   console.log('');
-  printPokemon('Active Pokemon', snapshot.player2.active);
+  printPokemon('Active Pokemon', snapshot.player2.active, true);
   for (let i = 0; i < snapshot.player2.bench.length; i += 1) {
     const bench = snapshot.player2.bench[i];
     if (!bench) {
       continue;
     }
-    printPokemon(`Bench ${i + 1}`, bench);
+    printPokemon(`Bench ${i + 1}`, bench, false);
   }
 
   console.log(`====== TURN ${snapshot.turn} =======`);
@@ -464,6 +475,12 @@ function printTurnActions(actions: TurnActionsSnapshot) {
         if (entry.outcome === 'not_executed') {
           console.log(
             `${entry.publicName}: attack ${entry.attackName} -> did not execute | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
+        if (entry.damage === 0) {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} executed (no damage) | reason: ${entry.reasoning}`,
           );
           continue;
         }
@@ -514,6 +531,12 @@ function printPlayerTurnAction(action: PlayerTurnActionSnapshot) {
     const attackOutcome = action.attackOutcome;
     if (attackOutcome?.executed) {
       const targetPokemon = attackOutcome.targetPokemon ?? 'unknown target';
+      if (attackOutcome.damage === 0) {
+        console.log(
+          `${action.publicName}: attack ${submittedAction.attackName} -> ${targetPokemon} executed (no damage) | reason: ${submittedAction.reasoning}`,
+        );
+        return;
+      }
       console.log(
         `${action.publicName}: attack ${submittedAction.attackName} -> ${targetPokemon} for ${attackOutcome.damage} damage${attackOutcome.critical ? ' (CRITICAL)' : ''} | reason: ${submittedAction.reasoning}`,
       );
@@ -553,10 +576,19 @@ function printPlayerTurnAction(action: PlayerTurnActionSnapshot) {
   }
 }
 
-function printPokemon(label: string, pokemon: SnapshotPokemon) {
+function printPokemon(
+  label: string,
+  pokemon: SnapshotPokemon,
+  includeStages: boolean,
+) {
   console.log(
     `${label}: ${pokemon.name} (${pokemon.hp} / ${pokemon.maxHp} HP)`,
   );
+  if (includeStages) {
+    console.log(
+      `Stages: acc ${pokemon.stages.accuracy} | atk ${pokemon.stages.attack} | crit ${pokemon.stages.critical} | def ${pokemon.stages.defense} | eva ${pokemon.stages.evasion} | spA ${pokemon.stages.specialAttack} | spD ${pokemon.stages.specialDefense}`,
+    );
+  }
   for (const move of pokemon.moves) {
     console.log(`${move.name} (${move.remainingPP} / ${move.maxPP} PP)`);
   }

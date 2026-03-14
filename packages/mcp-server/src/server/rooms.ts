@@ -11,11 +11,22 @@ export type SnapshotMove = {
   maxPP: number;
 };
 
+export type SnapshotStages = {
+  accuracy: number;
+  attack: number;
+  critical: number;
+  defense: number;
+  evasion: number;
+  specialAttack: number;
+  specialDefense: number;
+};
+
 export type SnapshotPokemon = {
   name: string;
   hp: number;
   maxHp: number;
   moves: SnapshotMove[];
+  stages: SnapshotStages;
 };
 
 export type BoardPlayerSnapshot = {
@@ -511,6 +522,13 @@ export function subscribeRoomTurnSnapshots(
 type FullPartyEntry = {
   name: string;
   health: number;
+  accuracyStage: number;
+  attackStage: number;
+  criticalStage: number;
+  defenseStage: number;
+  evasionStage: number;
+  specialAttackStage: number;
+  specialDefenseStage: number;
   stats: {
     hp: number;
   };
@@ -552,6 +570,15 @@ function buildSnapshotPokemon(entry: FullPartyEntry): SnapshotPokemon {
       remainingPP: move.remaining,
       maxPP: move.maxPP,
     })),
+    stages: {
+      accuracy: entry.accuracyStage,
+      attack: entry.attackStage,
+      critical: entry.criticalStage,
+      defense: entry.defenseStage,
+      evasion: entry.evasionStage,
+      specialAttack: entry.specialAttackStage,
+      specialDefense: entry.specialDefenseStage,
+    },
   };
 }
 
@@ -582,6 +609,8 @@ function buildTurnActionsSnapshot(
   const switchesByPlayer = new Map<string, SwitchOutcomeSnapshot[]>();
   const emittedSwitchCountByPlayer = new Map<string, number>();
   const attackOutcomeByPlayer = new Map<string, AttackOutcomeSnapshot>();
+  const consumedAttackByPlayer = new Map<string, string>();
+  const stageEffectTargetBySourcePlayer = new Map<string, string>();
   const fainted: FaintedTurnPokemonSnapshot[] = [];
   const timeline: TurnActionTimelineEntrySnapshot[] = [];
   const playersById = new Map<string, RoomPlayer>([
@@ -631,6 +660,21 @@ function buildTurnActionsSnapshot(
   }
 
   for (const event of emittedEvents) {
+    if (event.type === 'move.consumed') {
+      const submittedAction = submittedActions.get(event.playerId);
+      if (submittedAction?.type === 'attack') {
+        consumedAttackByPlayer.set(event.playerId, event.moveName);
+      }
+      continue;
+    }
+
+    if (event.type === 'battle.stat_stage_changed') {
+      if (!stageEffectTargetBySourcePlayer.has(event.sourcePlayerId)) {
+        stageEffectTargetBySourcePlayer.set(event.sourcePlayerId, event.pokemonName);
+      }
+      continue;
+    }
+
     if (event.type === 'damage.applied') {
       const submittedAction = submittedActions.get(event.sourcePlayerId);
       const attackName =
@@ -755,36 +799,68 @@ function buildTurnActionsSnapshot(
 
   for (const player of [player1, player2]) {
     const submittedAction = submittedActions.get(player.playerId);
-    if (
-      submittedAction?.type === 'attack' &&
-      !attackOutcomeByPlayer.has(player.playerId)
-    ) {
-      attackOutcomeByPlayer.set(player.playerId, {
-        attackName: submittedAction.attackName,
-        targetPokemon: null,
-        damage: 0,
-        executed: false,
-        critical: false,
-      });
+    if (submittedAction?.type !== 'attack') {
+      continue;
+    }
+
+    if (!attackOutcomeByPlayer.has(player.playerId)) {
+      const consumedMoveName = consumedAttackByPlayer.get(player.playerId);
+      const targetPokemon =
+        stageEffectTargetBySourcePlayer.get(player.playerId) ?? null;
+
+      if (consumedMoveName) {
+        attackOutcomeByPlayer.set(player.playerId, {
+          attackName: consumedMoveName,
+          targetPokemon,
+          damage: 0,
+          executed: true,
+          critical: false,
+        });
+      } else {
+        attackOutcomeByPlayer.set(player.playerId, {
+          attackName: submittedAction.attackName,
+          targetPokemon: null,
+          damage: 0,
+          executed: false,
+          critical: false,
+        });
+      }
     }
 
     if (
-      submittedAction?.type === 'attack' &&
       !timeline.some(
         (entry) => entry.type === 'attack' && entry.playerId === player.playerId,
       )
     ) {
-      timeline.push({
-        type: 'attack',
-        playerId: player.playerId,
-        publicName: player.publicName,
-        attackName: submittedAction.attackName,
-        targetPokemon: null,
-        damage: 0,
-        outcome: 'not_executed',
-        critical: false,
-        reasoning: submittedAction.reasoning,
-      });
+      const consumedMoveName = consumedAttackByPlayer.get(player.playerId);
+      const targetPokemon =
+        stageEffectTargetBySourcePlayer.get(player.playerId) ?? null;
+
+      if (consumedMoveName) {
+        timeline.push({
+          type: 'attack',
+          playerId: player.playerId,
+          publicName: player.publicName,
+          attackName: consumedMoveName,
+          targetPokemon,
+          damage: 0,
+          outcome: 'hit',
+          critical: false,
+          reasoning: submittedAction.reasoning,
+        });
+      } else {
+        timeline.push({
+          type: 'attack',
+          playerId: player.playerId,
+          publicName: player.publicName,
+          attackName: submittedAction.attackName,
+          targetPokemon: null,
+          damage: 0,
+          outcome: 'not_executed',
+          critical: false,
+          reasoning: submittedAction.reasoning,
+        });
+      }
     }
   }
 
@@ -850,6 +926,15 @@ function cloneSnapshotPokemon(snapshot: SnapshotPokemon): SnapshotPokemon {
       remainingPP: move.remainingPP,
       maxPP: move.maxPP,
     })),
+    stages: {
+      accuracy: snapshot.stages.accuracy,
+      attack: snapshot.stages.attack,
+      critical: snapshot.stages.critical,
+      defense: snapshot.stages.defense,
+      evasion: snapshot.stages.evasion,
+      specialAttack: snapshot.stages.specialAttack,
+      specialDefense: snapshot.stages.specialDefense,
+    },
   };
 }
 

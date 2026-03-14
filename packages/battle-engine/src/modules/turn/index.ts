@@ -11,6 +11,21 @@ type TurnAction = {
   action: SubmitActionCommand['action'];
 };
 
+type StageStat =
+  | 'accuracy'
+  | 'attack'
+  | 'critical'
+  | 'defense'
+  | 'evasion'
+  | 'specialAttack'
+  | 'specialDefense';
+
+type StageChange = {
+  target: 'self' | 'opponent';
+  stat: StageStat;
+  stages: number;
+};
+
 type SubmitActionCommand = Extract<DomainCommand, { type: 'action.submit' }>;
 
 const typeChart: Partial<Record<PokemonType, Partial<Record<PokemonType, number>>>> = {
@@ -471,6 +486,33 @@ export class TurnModule implements EngineModule {
       return false;
     }
 
+    const statChanges = move.statChanges ?? [];
+    if (statChanges.length > 0) {
+      const appliedAtLeastOneStage = this.applyMoveStageChanges(
+        attackerAction,
+        defenderAction,
+        simulatedParties,
+        statChanges,
+        moveName,
+        events,
+      );
+      if (!appliedAtLeastOneStage) {
+        events.push({
+          type: 'attack.missed',
+          playerId: attackerAction.playerId,
+          targetPlayerId: defenderAction.playerId,
+          pokemonName: attacker.name,
+          targetPokemonName: defender.name,
+          moveName,
+        });
+        return false;
+      }
+    }
+
+    if (move.power <= 0) {
+      return false;
+    }
+
     const attackStat =
       move.class === 'physical'
         ? this.getModifiedBattleStat(attacker.stats.attack, attacker.attackStage)
@@ -527,6 +569,53 @@ export class TurnModule implements EngineModule {
     }
 
     return false;
+  }
+
+  private applyMoveStageChanges(
+    attackerAction: TurnAction,
+    defenderAction: TurnAction,
+    simulatedParties: Map<string, PartyEntry[]>,
+    stageChanges: StageChange[],
+    moveName: string,
+    events: DomainEvent[],
+  ) {
+    const attacker = this.getActivePokemon(simulatedParties, attackerAction.playerId);
+    const defender = this.getActivePokemon(simulatedParties, defenderAction.playerId);
+    let appliedAtLeastOneStage = false;
+
+    for (const stageChange of stageChanges) {
+      const isSelfTarget = stageChange.target === 'self';
+      const targetPokemon = isSelfTarget ? attacker : defender;
+      const targetPlayerId = isSelfTarget
+        ? attackerAction.playerId
+        : defenderAction.playerId;
+      const currentStage = this.getPokemonStageValue(targetPokemon, stageChange.stat);
+      const nextStage = this.getClampedStageAfterDelta(
+        currentStage,
+        stageChange.stat,
+        stageChange.stages,
+      );
+
+      if (nextStage === currentStage) {
+        continue;
+      }
+
+      const delta = nextStage - currentStage;
+      this.setPokemonStageValue(targetPokemon, stageChange.stat, nextStage);
+      events.push({
+        type: 'battle.stat_stage_changed',
+        playerId: targetPlayerId,
+        pokemonName: targetPokemon.name,
+        sourcePlayerId: attackerAction.playerId,
+        moveName,
+        stat: stageChange.stat,
+        delta,
+        resultingStage: nextStage,
+      });
+      appliedAtLeastOneStage = true;
+    }
+
+    return appliedAtLeastOneStage;
   }
 
   private validateAction(
@@ -691,6 +780,64 @@ export class TurnModule implements EngineModule {
   private clampCriticalStage(stage: number) {
     const normalizedStage = Math.trunc(stage);
     return Math.max(MIN_CRITICAL_STAGE, normalizedStage);
+  }
+
+  private getClampedStageAfterDelta(currentStage: number, stat: StageStat, delta: number) {
+    const nextStage = currentStage + Math.trunc(delta);
+    if (stat === 'critical') {
+      return this.clampCriticalStage(nextStage);
+    }
+    return this.clampBattleStage(nextStage);
+  }
+
+  private getPokemonStageValue(pokemon: PartyEntry, stat: StageStat) {
+    if (stat === 'accuracy') {
+      return pokemon.accuracyStage;
+    }
+    if (stat === 'attack') {
+      return pokemon.attackStage;
+    }
+    if (stat === 'critical') {
+      return pokemon.criticalStage;
+    }
+    if (stat === 'defense') {
+      return pokemon.defenseStage;
+    }
+    if (stat === 'evasion') {
+      return pokemon.evasionStage;
+    }
+    if (stat === 'specialAttack') {
+      return pokemon.specialAttackStage;
+    }
+    return pokemon.specialDefenseStage;
+  }
+
+  private setPokemonStageValue(pokemon: PartyEntry, stat: StageStat, nextStage: number) {
+    if (stat === 'accuracy') {
+      pokemon.accuracyStage = nextStage;
+      return;
+    }
+    if (stat === 'attack') {
+      pokemon.attackStage = nextStage;
+      return;
+    }
+    if (stat === 'critical') {
+      pokemon.criticalStage = nextStage;
+      return;
+    }
+    if (stat === 'defense') {
+      pokemon.defenseStage = nextStage;
+      return;
+    }
+    if (stat === 'evasion') {
+      pokemon.evasionStage = nextStage;
+      return;
+    }
+    if (stat === 'specialAttack') {
+      pokemon.specialAttackStage = nextStage;
+      return;
+    }
+    pokemon.specialDefenseStage = nextStage;
   }
 
   private getCriticalHitChance(stage: number) {
