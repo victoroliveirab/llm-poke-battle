@@ -28,11 +28,19 @@ export type SubmittedTurnAction =
   | {
       type: 'attack';
       attackName: string;
+      reasoning: string;
     }
   | {
       type: 'switch';
       newPokemon: string;
+      reasoning: string;
     };
+
+export type InterTurnSwitchAction = {
+  fromPokemon: string | null;
+  toPokemon: string;
+  reasoning: string;
+};
 
 export type AttackOutcomeSnapshot = {
   attackName: string;
@@ -67,8 +75,9 @@ export type TurnActionTimelineEntrySnapshot =
       playerId: string;
       publicName: string;
       attackName: string;
-      targetPokemon: string;
+      targetPokemon: string | null;
       damage: number;
+      reasoning: string;
     }
   | {
       type: 'switch';
@@ -77,6 +86,7 @@ export type TurnActionTimelineEntrySnapshot =
       fromPokemon: string | null;
       toPokemon: string;
       forced: boolean;
+      reasoning: string;
     }
   | {
       type: 'fainted';
@@ -106,6 +116,7 @@ type TurnResolutionDetails = {
   emittedEvents: BattleDomainEvent[];
   preTurnActivePokemonByPlayerId: Map<string, string>;
   submittedActionsByPlayerId: Map<string, SubmittedTurnAction>;
+  pendingInterTurnSwitchesByPlayerId: Map<string, InterTurnSwitchAction[]>;
 };
 
 export type RoomSnapshotSummary = {
@@ -124,6 +135,7 @@ export type Room = {
   creatorPlayerId: string | null;
   gameStarted: boolean;
   pendingTurnActions: Map<string, SubmittedTurnAction>;
+  pendingInterTurnSwitches: Map<string, InterTurnSwitchAction[]>;
   turnSnapshots: TurnSnapshot[];
   lastSnapshottedTurn: number;
   snapshotSubscribers: Set<RoomSnapshotSubscriber>;
@@ -141,6 +153,9 @@ export type RoomPlayer = {
 };
 
 const rooms = new Map<string, Room>();
+const UNRECORDED_ATTACK_REASONING = 'No attack reasoning was recorded.';
+const FORCED_SWITCH_REASONING =
+  'Forced switch triggered by battle state; this switch was not a direct submitted action.';
 
 export function createRoom(): Room {
   const roomId = randomUUID();
@@ -150,6 +165,7 @@ export function createRoom(): Room {
     creatorPlayerId: null,
     gameStarted: false,
     pendingTurnActions: new Map<string, SubmittedTurnAction>(),
+    pendingInterTurnSwitches: new Map<string, InterTurnSwitchAction[]>(),
     turnSnapshots: [],
     lastSnapshottedTurn: 0,
     snapshotSubscribers: new Set<RoomSnapshotSubscriber>(),
@@ -210,6 +226,7 @@ export function resetRoomGame(room: Room): Battle {
   const game = buildBattleForRoom(room);
   room.game = game;
   room.pendingTurnActions.clear();
+  room.pendingInterTurnSwitches.clear();
   room.turnSnapshots = [];
   room.lastSnapshottedTurn = 0;
   return game;
@@ -306,6 +323,7 @@ export function setPendingTurnAction(
     room.pendingTurnActions.set(playerId, {
       type: 'attack',
       attackName: action.attackName,
+      reasoning: action.reasoning,
     });
     return;
   }
@@ -313,6 +331,7 @@ export function setPendingTurnAction(
   room.pendingTurnActions.set(playerId, {
     type: 'switch',
     newPokemon: action.newPokemon,
+    reasoning: action.reasoning,
   });
 }
 
@@ -326,10 +345,12 @@ export function snapshotPendingTurnActions(
         ? {
             type: 'attack' as const,
             attackName: action.attackName,
+            reasoning: action.reasoning,
           }
         : {
             type: 'switch' as const,
             newPokemon: action.newPokemon,
+            reasoning: action.reasoning,
           },
     ]),
   );
@@ -337,6 +358,41 @@ export function snapshotPendingTurnActions(
 
 export function clearPendingTurnActions(room: Room): void {
   room.pendingTurnActions.clear();
+}
+
+export function queuePendingInterTurnSwitch(
+  room: Room,
+  playerId: string,
+  action: InterTurnSwitchAction,
+): void {
+  const existing = room.pendingInterTurnSwitches.get(playerId) ?? [];
+  existing.push({
+    fromPokemon: action.fromPokemon,
+    toPokemon: action.toPokemon,
+    reasoning: action.reasoning,
+  });
+  room.pendingInterTurnSwitches.set(playerId, existing);
+}
+
+export function snapshotPendingInterTurnSwitches(
+  room: Room,
+): Map<string, InterTurnSwitchAction[]> {
+  return new Map(
+    Array.from(room.pendingInterTurnSwitches.entries()).map(
+      ([playerId, actions]) => [
+        playerId,
+        actions.map((action) => ({
+          fromPokemon: action.fromPokemon,
+          toPokemon: action.toPokemon,
+          reasoning: action.reasoning,
+        })),
+      ],
+    ),
+  );
+}
+
+export function clearPendingInterTurnSwitches(room: Room): void {
+  room.pendingInterTurnSwitches.clear();
 }
 
 export function subscribeRoomTurnSnapshots(
@@ -415,10 +471,13 @@ function buildTurnActionsSnapshot(
   resolutionDetails?: TurnResolutionDetails,
 ): TurnActionsSnapshot {
   const submittedActions = resolutionDetails?.submittedActionsByPlayerId ?? new Map();
+  const pendingInterTurnSwitches =
+    resolutionDetails?.pendingInterTurnSwitchesByPlayerId ?? new Map();
   const preTurnActivePokemon =
     resolutionDetails?.preTurnActivePokemonByPlayerId ?? new Map();
   const emittedEvents = resolutionDetails?.emittedEvents ?? [];
   const switchesByPlayer = new Map<string, SwitchOutcomeSnapshot[]>();
+  const emittedSwitchCountByPlayer = new Map<string, number>();
   const attackOutcomeByPlayer = new Map<string, AttackOutcomeSnapshot>();
   const fainted: FaintedTurnPokemonSnapshot[] = [];
   const timeline: TurnActionTimelineEntrySnapshot[] = [];
@@ -426,6 +485,47 @@ function buildTurnActionsSnapshot(
     [player1.playerId, player1],
     [player2.playerId, player2],
   ]);
+  const recordSwitch = (params: {
+    playerId: string;
+    fromPokemon: string | null;
+    toPokemon: string;
+    forced: boolean;
+    reasoning: string;
+  }) => {
+    const switches = switchesByPlayer.get(params.playerId) ?? [];
+    const switchOutcome: SwitchOutcomeSnapshot = {
+      fromPokemon: params.fromPokemon,
+      toPokemon: params.toPokemon,
+      forced: params.forced,
+    };
+    switches.push(switchOutcome);
+    switchesByPlayer.set(params.playerId, switches);
+    const player = playersById.get(params.playerId);
+    if (player) {
+      timeline.push({
+        type: 'switch',
+        playerId: params.playerId,
+        publicName: player.publicName,
+        fromPokemon: switchOutcome.fromPokemon,
+        toPokemon: switchOutcome.toPokemon,
+        forced: switchOutcome.forced,
+        reasoning: params.reasoning,
+      });
+    }
+  };
+
+  for (const player of [player1, player2]) {
+    const queuedSwitches = pendingInterTurnSwitches.get(player.playerId) ?? [];
+    for (const queuedSwitch of queuedSwitches) {
+      recordSwitch({
+        playerId: player.playerId,
+        fromPokemon: queuedSwitch.fromPokemon,
+        toPokemon: queuedSwitch.toPokemon,
+        forced: true,
+        reasoning: queuedSwitch.reasoning,
+      });
+    }
+  }
 
   for (const event of emittedEvents) {
     if (event.type === 'damage.applied') {
@@ -434,6 +534,10 @@ function buildTurnActionsSnapshot(
         submittedAction?.type === 'attack'
           ? submittedAction.attackName
           : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
       const sourcePlayer = playersById.get(event.sourcePlayerId);
       attackOutcomeByPlayer.set(event.sourcePlayerId, {
         attackName,
@@ -449,6 +553,7 @@ function buildTurnActionsSnapshot(
           attackName,
           targetPokemon: event.pokemonName,
           damage: event.damage,
+          reasoning,
         });
       }
       continue;
@@ -462,30 +567,29 @@ function buildTurnActionsSnapshot(
         preTurnActivePokemon.get(event.playerId) ??
         null;
       const submittedAction = submittedActions.get(event.playerId);
+      const emittedSwitchCount =
+        emittedSwitchCountByPlayer.get(event.playerId) ?? 0;
       const isSubmittedSwitch =
         submittedAction?.type === 'switch' &&
         submittedAction.newPokemon === event.pokemonName &&
-        switches.length === 0;
+        emittedSwitchCount === 0;
+      const reasoning =
+        submittedAction?.type === 'switch' && isSubmittedSwitch
+          ? submittedAction.reasoning
+          : FORCED_SWITCH_REASONING;
       const switchOutcome: SwitchOutcomeSnapshot = {
         fromPokemon,
         toPokemon: event.pokemonName,
         forced: !isSubmittedSwitch,
       };
-
-      switches.push(switchOutcome);
-
-      switchesByPlayer.set(event.playerId, switches);
-      const player = playersById.get(event.playerId);
-      if (player) {
-        timeline.push({
-          type: 'switch',
-          playerId: event.playerId,
-          publicName: player.publicName,
-          fromPokemon: switchOutcome.fromPokemon,
-          toPokemon: switchOutcome.toPokemon,
-          forced: switchOutcome.forced,
-        });
-      }
+      recordSwitch({
+        playerId: event.playerId,
+        fromPokemon: switchOutcome.fromPokemon,
+        toPokemon: switchOutcome.toPokemon,
+        forced: switchOutcome.forced,
+        reasoning,
+      });
+      emittedSwitchCountByPlayer.set(event.playerId, emittedSwitchCount + 1);
       continue;
     }
 
@@ -520,6 +624,23 @@ function buildTurnActionsSnapshot(
         targetPokemon: null,
         damage: 0,
         executed: false,
+      });
+    }
+
+    if (
+      submittedAction?.type === 'attack' &&
+      !timeline.some(
+        (entry) => entry.type === 'attack' && entry.playerId === player.playerId,
+      )
+    ) {
+      timeline.push({
+        type: 'attack',
+        playerId: player.playerId,
+        publicName: player.publicName,
+        attackName: submittedAction.attackName,
+        targetPokemon: null,
+        damage: 0,
+        reasoning: submittedAction.reasoning,
       });
     }
   }
@@ -623,12 +744,14 @@ function cloneSubmittedTurnAction(
     return {
       type: 'attack',
       attackName: action.attackName,
+      reasoning: action.reasoning,
     };
   }
 
   return {
     type: 'switch',
     newPokemon: action.newPokemon,
+    reasoning: action.reasoning,
   };
 }
 
@@ -683,6 +806,7 @@ function cloneTurnActionTimelineEntries(
         attackName: entry.attackName,
         targetPokemon: entry.targetPokemon,
         damage: entry.damage,
+        reasoning: entry.reasoning,
       };
     }
 
@@ -694,6 +818,7 @@ function cloneTurnActionTimelineEntries(
         fromPokemon: entry.fromPokemon,
         toPokemon: entry.toPokemon,
         forced: entry.forced,
+        reasoning: entry.reasoning,
       };
     }
 

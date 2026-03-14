@@ -53,8 +53,8 @@ Commands:
   start
   party <p1> <p2> <p3>
   state
-  move attack <attackName>
-  move switch <pokemonName>
+  move attack <attackName> --reason <reasoning>
+  move switch <pokemonName> --reason <reasoning>
   tool <tool_name> <json_args>
   last
   quit
@@ -345,10 +345,12 @@ async function main() {
         commandLine = 'state';
       } else if (line === '6') {
         const attackName = await promptRequired(rl, 'Attack name: ');
-        commandLine = `move attack ${attackName}`;
+        const reasoning = await promptRequired(rl, 'Reasoning: ');
+        commandLine = `move attack ${attackName} --reason ${reasoning}`;
       } else if (line === '7') {
         const pokemonName = await promptRequired(rl, 'Pokemon to switch to: ');
-        commandLine = `move switch ${pokemonName}`;
+        const reasoning = await promptRequired(rl, 'Reasoning: ');
+        commandLine = `move switch ${pokemonName} --reason ${reasoning}`;
       } else if (line === '8') {
         const toolName = await promptRequired(rl, 'Tool name: ');
         const rawArgs = await promptRequired(rl, 'Tool JSON args (object): ');
@@ -432,18 +434,25 @@ async function runCommand(params: {
   }
 
   if (command === 'move') {
-    if (tokens.length < 3) {
+    if (tokens.length < 5) {
       throw new Error(
-        'Usage: move attack <attackName> | move switch <pokemonName>',
+        'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
       );
     }
 
     const roomHandle = assertRoomHandle(currentRoomHandle);
     const mode = tokens[1];
-    const payloadValue = tokens.slice(2).join(' ');
-    if (!payloadValue) {
+    const reasonFlagIndex = tokens.findIndex((token) => token === '--reason');
+    if (reasonFlagIndex < 0 || reasonFlagIndex === tokens.length - 1) {
       throw new Error(
-        'Usage: move attack <attackName> | move switch <pokemonName>',
+        'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
+      );
+    }
+    const payloadValue = tokens.slice(2, reasonFlagIndex).join(' ');
+    const reasoning = tokens.slice(reasonFlagIndex + 1).join(' ');
+    if (!payloadValue || !reasoning) {
+      throw new Error(
+        'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
       );
     }
 
@@ -452,6 +461,7 @@ async function runCommand(params: {
         room_handle: roomHandle,
         action: {
           type: 'attack',
+          reasoning,
           payload: {
             attackName: payloadValue,
           },
@@ -465,6 +475,7 @@ async function runCommand(params: {
         room_handle: roomHandle,
         action: {
           type: 'switch',
+          reasoning,
           payload: {
             newPokemon: payloadValue,
           },
@@ -473,7 +484,9 @@ async function runCommand(params: {
       return { nextRoomHandle: roomHandle, lastResult: result };
     }
 
-    throw new Error('Usage: move attack <attackName> | move switch <pokemonName>');
+    throw new Error(
+      'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
+    );
   }
 
   if (command === 'tool') {

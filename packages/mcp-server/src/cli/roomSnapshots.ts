@@ -21,10 +21,12 @@ type SubmittedTurnAction =
   | {
       type: 'attack';
       attackName: string;
+      reasoning: string;
     }
   | {
       type: 'switch';
       newPokemon: string;
+      reasoning: string;
     };
 
 type AttackOutcomeSnapshot = {
@@ -60,8 +62,9 @@ type TurnActionTimelineEntrySnapshot =
       playerId: string;
       publicName: string;
       attackName: string;
-      targetPokemon: string;
+      targetPokemon: string | null;
       damage: number;
+      reasoning: string;
     }
   | {
       type: 'switch';
@@ -70,6 +73,7 @@ type TurnActionTimelineEntrySnapshot =
       fromPokemon: string | null;
       toPokemon: string;
       forced: boolean;
+      reasoning: string;
     }
   | {
       type: 'fainted';
@@ -412,8 +416,9 @@ function printTurnActions(actions: TurnActionsSnapshot) {
   if (timeline.length > 0) {
     for (const entry of timeline) {
       if (entry.type === 'attack') {
+        const targetPokemon = entry.targetPokemon ?? 'no target';
         console.log(
-          `${entry.publicName}: attack ${entry.attackName} -> ${entry.targetPokemon} for ${entry.damage} damage`,
+          `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} for ${entry.damage} damage | reason: ${entry.reasoning}`,
         );
         continue;
       }
@@ -421,7 +426,7 @@ function printTurnActions(actions: TurnActionsSnapshot) {
       if (entry.type === 'switch') {
         const fromPokemon = entry.fromPokemon ?? 'unknown';
         console.log(
-          `${entry.publicName}: switch ${fromPokemon} -> ${entry.toPokemon}${entry.forced ? ' (forced)' : ''}`,
+          `${entry.publicName}: switch ${fromPokemon} -> ${entry.toPokemon}${entry.forced ? ' (forced)' : ''} | reason: ${entry.reasoning}`,
         );
         continue;
       }
@@ -460,11 +465,11 @@ function printPlayerTurnAction(action: PlayerTurnActionSnapshot) {
     if (attackOutcome?.executed) {
       const targetPokemon = attackOutcome.targetPokemon ?? 'unknown target';
       console.log(
-        `${action.publicName}: attack ${submittedAction.attackName} -> ${targetPokemon} for ${attackOutcome.damage} damage`,
+        `${action.publicName}: attack ${submittedAction.attackName} -> ${targetPokemon} for ${attackOutcome.damage} damage | reason: ${submittedAction.reasoning}`,
       );
     } else {
       console.log(
-        `${action.publicName}: attack ${submittedAction.attackName} -> did not land (0 damage)`,
+        `${action.publicName}: attack ${submittedAction.attackName} -> did not land (0 damage) | reason: ${submittedAction.reasoning}`,
       );
     }
   } else {
@@ -476,13 +481,13 @@ function printPlayerTurnAction(action: PlayerTurnActionSnapshot) {
     };
     const fromPokemon = switchForAction.fromPokemon ?? 'unknown';
     console.log(
-      `${action.publicName}: switch ${fromPokemon} -> ${switchForAction.toPokemon}${switchForAction.forced ? ' (forced)' : ''}`,
+      `${action.publicName}: switch ${fromPokemon} -> ${switchForAction.toPokemon}${switchForAction.forced ? ' (forced)' : ''} | reason: ${submittedAction.reasoning}`,
     );
 
     for (const forcedSwitch of additionalSwitches) {
       const forcedFromPokemon = forcedSwitch.fromPokemon ?? 'unknown';
       console.log(
-        `${action.publicName}: switch ${forcedFromPokemon} -> ${forcedSwitch.toPokemon}${forcedSwitch.forced ? ' (forced)' : ''}`,
+        `${action.publicName}: switch ${forcedFromPokemon} -> ${forcedSwitch.toPokemon}${forcedSwitch.forced ? ' (forced)' : ''} | reason: forced transition after submitted switch`,
       );
     }
     return;
@@ -492,7 +497,7 @@ function printPlayerTurnAction(action: PlayerTurnActionSnapshot) {
     for (const switchOutcome of action.switches) {
       const fromPokemon = switchOutcome.fromPokemon ?? 'unknown';
       console.log(
-        `${action.publicName}: switch ${fromPokemon} -> ${switchOutcome.toPokemon}${switchOutcome.forced ? ' (forced)' : ''}`,
+        `${action.publicName}: switch ${fromPokemon} -> ${switchOutcome.toPokemon}${switchOutcome.forced ? ' (forced)' : ''} | reason: forced transition after submitted action`,
       );
     }
   }

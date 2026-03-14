@@ -96,7 +96,7 @@ One CLI process equals one MCP session/player. To run a full match without LLMs,
 6. Both terminals command:
 `party <p1> <p2> <p3>`
 7. Both terminals command each turn:
-`move attack <attackName>` or `move switch <pokemonName>`
+`move attack <attackName> --reason <reasoning>` or `move switch <pokemonName> --reason <reasoning>`
 
 The CLI shows a guided action menu every loop and uses a `>>` prompt to select actions (numeric shortcuts), while still accepting free-form commands.
 
@@ -108,8 +108,8 @@ REPL commands:
 - `start`
 - `party <p1> <p2> <p3>`
 - `state`
-- `move attack <attackName>`
-- `move switch <pokemonName>`
+- `move attack <attackName> --reason <reasoning>`
+- `move switch <pokemonName> --reason <reasoning>`
 - `tool <tool_name> <json_args>`
 - `last`
 - `quit`
@@ -138,6 +138,11 @@ Minimal flow:
 2. Follow `harness_guidance.next_action`.
 3. Continue lifecycle calls (creator polls `start_game` until success; non-creator polls `get_game_state` until party selection), then `select_party`, `play_move` + `get_game_state`.
 4. Stop only when phase is `game_over` and final state has been fetched.
+
+`play_move` requires `action.reasoning` (non-empty string) for both `attack` and `switch`.
+For forced replacement switches:
+- If multiple legal replacements exist, reasoning should explain why the selected Pokemon is preferred.
+- If only one legal replacement exists, reasoning should state it is the only legal option.
 
 The contract is machine-actionable:
 

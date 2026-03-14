@@ -66,6 +66,7 @@ If `room_handle` is provided:
 - Poll `get_game_state({"room_handle":"<room_handle>"})`.
 - If phase is `game_over`, report winner and stop.
 - If phase is `game_loop`, choose one action and call `play_move`.
+- Every `play_move` call must include `action.reasoning` (free text) explaining why the action was chosen.
 
 Action policy:
 
@@ -81,8 +82,18 @@ Action policy:
   - Opponent makes low-risk repetitive plays: this may be exploitable by proactive positioning.
 - Come up with your own strategy from the evolving board state; use these examples only as signals, not fixed instructions.
 - If forced replacement, switch to the best available bench option for the current matchup (not just the first one).
+- For forced replacement:
+  - If more than one legal replacement exists, explain why the chosen Pokemon is better than alternatives.
+  - If exactly one legal replacement exists, state that it is the only legal choice.
 - If invalid attack occurs, read again the available attacks to decide the attack.
 - On `Action already taken`, `Game not started yet`, or waiting errors, continue polling.
+
+`play_move` payload shape examples:
+
+- Attack:
+  `{"room_handle":"<room_handle>","action":{"type":"attack","reasoning":"<why this attack now>","payload":{"attackName":"<AttackName>"}}}`
+- Switch:
+  `{"room_handle":"<room_handle>","action":{"type":"switch","reasoning":"<why this Pokemon is the best switch>","payload":{"newPokemon":"<PokemonName>"}}}`
 
 5. Stop condition:
 

@@ -198,6 +198,9 @@ export function buildJoinRoomHarnessPayload(params: {
       ],
       game_loop: [
         'When phase is game_loop, call play_move with one action per turn (attack or switch).',
+        'Every play_move action must include action.reasoning with a concise explanation of why the move was chosen.',
+        'For forced replacement switches, if multiple bench choices are available, explain why the selected Pokemon is better than alternatives.',
+        "For forced replacement switches with only one legal choice, set reasoning to explain that it is the only available option.",
         'If your action is queued and no turn resolution occurs yet, wait and call get_game_state before retrying.',
         'Use current visible state to decide your next action. No human input is needed.',
       ],
@@ -355,6 +358,7 @@ function inferNextAction(params: {
         room_handle: roomHandle,
         action: {
           type: 'attack',
+          reasoning: '<Reasoning>',
           payload: {
             attackName: '<AttackName>',
           },
@@ -442,6 +446,8 @@ function buildHarnessPrompt(params: {
     '- No human input is required after this join_room response.',
     '- Never ask a human for next steps. Keep polling and acting per this contract.',
     '- Lifecycle: start_game (creator only) -> select_party -> play_move loop -> stop at game_over.',
+    '- For every play_move call, include action.reasoning (free text) explaining the decision.',
+    '- Forced switch rule: if multiple legal replacements exist, explain why the selected one is best; if only one exists, say it is the only legal choice.',
     '- Before game start: creator polls start_game, non-creator polls get_game_state.',
     '- Stop only when phase equals game_over, then record winner and exit.',
     '- Do not send status updates while running. Send one final report on game_over or terminal_error.',
@@ -466,7 +472,7 @@ function buildAutonomousLoop(params: {
     `- once game_started=true, call get_game_state({"room_handle":"${roomHandle}"})`,
     `- if state.phase=="party_selection" and your_party_selected=false, call select_party({"room_handle":"${roomHandle}","p1":"<PokemonName1>","p2":"<PokemonName2>","p3":"<PokemonName3>"})`,
     `- if state.phase=="party_selection" and your_party_selected=true, continue polling get_game_state({"room_handle":"${roomHandle}"})`,
-    `- if state.phase=="game_loop", choose attack or switch and call play_move({"room_handle":"${roomHandle}","action":{"type":"attack","payload":{"attackName":"<AttackName>"}}})`,
+    `- if state.phase=="game_loop", choose attack or switch and call play_move({"room_handle":"${roomHandle}","action":{"type":"attack","reasoning":"<Reasoning>","payload":{"attackName":"<AttackName>"}}})`,
     `- if play_move returns error "Action already taken", poll get_game_state({"room_handle":"${roomHandle}"}) and continue`,
     `- if state.phase=="game_over", record winner and stop`,
     '- Do not ask for user input during the loop.',

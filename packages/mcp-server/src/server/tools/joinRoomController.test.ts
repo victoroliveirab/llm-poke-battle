@@ -47,6 +47,8 @@ describe('join_room json contract', () => {
     expect(harnessPrompt).toContain(
       'If you joined an existing room, start polling get_game_state until you should pick a party.',
     );
+    expect(harnessPrompt).toContain('action.reasoning');
+    expect(harnessPrompt).toContain('Forced switch rule:');
 
     const guidance = payload.harness_guidance as Record<string, unknown>;
     const autonomy = guidance.autonomy as Record<string, unknown>;
@@ -78,6 +80,9 @@ describe('join_room json contract', () => {
     ).toBe(true);
     expect(
       autonomousLoop.some((step) => step.includes('poll start_game')),
+    ).toBe(true);
+    expect(
+      autonomousLoop.some((step) => step.includes('"reasoning":"<Reasoning>"')),
     ).toBe(true);
     expect(role.is_creator).toBe(true);
     expect(role.player_slot).toBe(1);

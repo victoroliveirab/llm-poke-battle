@@ -3,11 +3,14 @@ import { asRecord, asRequiredString } from '../parse';
 import { errorResult, jsonResult } from '../response';
 import {
   captureRoomTurnSnapshot,
+  clearPendingInterTurnSwitches,
   clearPendingTurnActions,
   getRoom,
   hasTurnSnapshot,
   listRoomPlayers,
+  queuePendingInterTurnSwitch,
   setPendingTurnAction,
+  snapshotPendingInterTurnSwitches,
   snapshotPendingTurnActions,
   type Room,
   type SubmittedTurnAction,
@@ -26,9 +29,14 @@ export const playMoveController: ToolController = {
         type: 'object',
         properties: {
           type: { type: 'string' },
+          reasoning: {
+            type: 'string',
+            description:
+              'Free-text explanation for why this action was chosen.',
+          },
           payload: {},
         },
-        required: ['type', 'payload'],
+        required: ['type', 'reasoning', 'payload'],
       },
     },
     required: ['room_handle', 'action'],
@@ -74,14 +82,32 @@ export const playMoveController: ToolController = {
           event.type === 'action.submitted' &&
           event.playerId === membership.playerId,
       );
+      const replacementSwitchResolvedImmediately =
+        submittedAction.type === 'switch' &&
+        !actionQueuedForTurn &&
+        emittedEvents.some(
+          (event) =>
+            event.type === 'pokemon.switched' &&
+            event.playerId === membership.playerId,
+        );
       if (actionQueuedForTurn) {
         setPendingTurnAction(room, membership.playerId, submittedAction);
+      }
+      if (replacementSwitchResolvedImmediately) {
+        queuePendingInterTurnSwitch(room, membership.playerId, {
+          fromPokemon:
+            preTurnActivePokemonByPlayerId.get(membership.playerId) ?? null,
+          toPokemon: submittedAction.newPokemon,
+          reasoning: submittedAction.reasoning,
+        });
       }
 
       const stateAfter = room.game.getStateAsPlayer(membership.playerId);
       const resolvedTurn = inferResolvedTurn(stateBefore, stateAfter);
       if (resolvedTurn !== null) {
         const submittedActionsByPlayerId = snapshotPendingTurnActions(room);
+        const pendingInterTurnSwitchesByPlayerId =
+          snapshotPendingInterTurnSwitches(room);
 
         try {
           if (!hasTurnSnapshot(room, resolvedTurn)) {
@@ -89,10 +115,12 @@ export const playMoveController: ToolController = {
               emittedEvents,
               preTurnActivePokemonByPlayerId,
               submittedActionsByPlayerId,
+              pendingInterTurnSwitchesByPlayerId,
             });
           }
         } finally {
           clearPendingTurnActions(room);
+          clearPendingInterTurnSwitches(room);
         }
       }
 
@@ -124,6 +152,7 @@ function parseSubmittedTurnAction(
   actionInput: Record<string, unknown>,
 ): SubmittedTurnAction {
   const actionType = asRequiredString(actionInput.type, 'action.type');
+  const reasoning = asRequiredString(actionInput.reasoning, 'action.reasoning');
   const payload = asRecord(actionInput.payload);
 
   if (actionType === 'attack') {
@@ -133,6 +162,7 @@ function parseSubmittedTurnAction(
         payload.attackName,
         'action.payload.attackName',
       ),
+      reasoning,
     };
   }
 
@@ -143,6 +173,7 @@ function parseSubmittedTurnAction(
         payload.newPokemon,
         'action.payload.newPokemon',
       ),
+      reasoning,
     };
   }
 
