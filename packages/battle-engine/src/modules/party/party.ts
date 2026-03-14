@@ -22,6 +22,7 @@ export type PartyStats = {
 export type PartyEntry = {
   accuracyStage: number;
   attackStage: number;
+  criticalStage: number;
   defenseStage: number;
   evasionStage: number;
   health: number;
@@ -180,6 +181,7 @@ export class Party {
     return {
       accuracyStage: 0,
       attackStage: 0,
+      criticalStage: 0,
       defenseStage: 0,
       evasionStage: 0,
       health: stats.hp,

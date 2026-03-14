@@ -169,6 +169,9 @@ describe('play_move reasoning requirement', () => {
     expect(attackTimeline.some((entry) => entry.reasoning === player2Reasoning)).toBe(
       true,
     );
+    expect(
+      attackTimeline.every((entry) => typeof entry.critical === 'boolean'),
+    ).toBe(true);
   });
 
   it('records misses as non-executed attack outcomes with zero damage timeline entries', async () => {
@@ -235,9 +238,11 @@ describe('play_move reasoning requirement', () => {
     expect(snapshot.actions.player1.attackOutcome?.executed).toBe(false);
     expect(snapshot.actions.player1.attackOutcome?.targetPokemon).toBe('Charizard');
     expect(snapshot.actions.player1.attackOutcome?.damage).toBe(0);
+    expect(snapshot.actions.player1.attackOutcome?.critical).toBe(false);
     expect(snapshot.actions.player2.attackOutcome?.executed).toBe(false);
     expect(snapshot.actions.player2.attackOutcome?.targetPokemon).toBe('Charizard');
     expect(snapshot.actions.player2.attackOutcome?.damage).toBe(0);
+    expect(snapshot.actions.player2.attackOutcome?.critical).toBe(false);
 
     const attackTimeline = snapshot.actions.timeline.filter(
       (entry) => entry.type === 'attack',
@@ -248,6 +253,7 @@ describe('play_move reasoning requirement', () => {
         (entry) =>
           entry.reasoning === player1Reasoning &&
           entry.damage === 0 &&
+          entry.critical === false &&
           entry.outcome === 'miss',
       ),
     ).toBe(true);
@@ -256,6 +262,7 @@ describe('play_move reasoning requirement', () => {
         (entry) =>
           entry.reasoning === player2Reasoning &&
           entry.damage === 0 &&
+          entry.critical === false &&
           entry.outcome === 'miss',
       ),
     ).toBe(true);

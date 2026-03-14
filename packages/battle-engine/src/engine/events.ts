@@ -42,6 +42,7 @@ export type DomainEvent =
       damage: number;
       sourcePlayerId: string;
       moveName: string;
+      critical: boolean;
     }
   | {
       type: 'pokemon.fainted';

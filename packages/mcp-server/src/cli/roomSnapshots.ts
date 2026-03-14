@@ -50,6 +50,7 @@ type AttackOutcomeSnapshot = {
   targetPokemon: string | null;
   damage: number;
   executed: boolean;
+  critical: boolean;
 };
 
 type SwitchOutcomeSnapshot = {
@@ -81,6 +82,7 @@ type TurnActionTimelineEntrySnapshot =
       targetPokemon: string | null;
       damage: number;
       outcome?: 'hit' | 'miss' | 'not_executed';
+      critical: boolean;
       reasoning: string;
     }
   | {
@@ -466,7 +468,7 @@ function printTurnActions(actions: TurnActionsSnapshot) {
           continue;
         }
         console.log(
-          `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} for ${entry.damage} damage | reason: ${entry.reasoning}`,
+          `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} for ${entry.damage} damage${entry.critical ? ' (CRITICAL)' : ''} | reason: ${entry.reasoning}`,
         );
         continue;
       }
@@ -513,7 +515,7 @@ function printPlayerTurnAction(action: PlayerTurnActionSnapshot) {
     if (attackOutcome?.executed) {
       const targetPokemon = attackOutcome.targetPokemon ?? 'unknown target';
       console.log(
-        `${action.publicName}: attack ${submittedAction.attackName} -> ${targetPokemon} for ${attackOutcome.damage} damage | reason: ${submittedAction.reasoning}`,
+        `${action.publicName}: attack ${submittedAction.attackName} -> ${targetPokemon} for ${attackOutcome.damage} damage${attackOutcome.critical ? ' (CRITICAL)' : ''} | reason: ${submittedAction.reasoning}`,
       );
     } else {
       console.log(

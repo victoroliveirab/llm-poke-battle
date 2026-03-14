@@ -161,6 +161,7 @@ export class Battle {
       return {
         accuracyStage: entry.accuracyStage,
         attackStage: entry.attackStage,
+        criticalStage: entry.criticalStage,
         defenseStage: entry.defenseStage,
         evasionStage: entry.evasionStage,
         health: isRevealedPokemon ? entry.health : null,

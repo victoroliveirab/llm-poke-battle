@@ -151,8 +151,16 @@ const typeChart: Partial<Record<PokemonType, Partial<Record<PokemonType, number>
   },
 };
 
-const MIN_ACCURACY_STAGE = -6;
-const MAX_ACCURACY_STAGE = 6;
+const MIN_STAT_STAGE = -6;
+const MAX_STAT_STAGE = 6;
+const MIN_CRITICAL_STAGE = 0;
+const CRITICAL_GUARANTEED_STAGE = 3;
+
+const CRITICAL_HIT_CHANCE_BY_STAGE: Record<0 | 1 | 2, number> = {
+  0: 1 / 24,
+  1: 1 / 8,
+  2: 1 / 2,
+};
 
 export class TurnModule implements EngineModule {
   private pendingActions = new Map<string, SubmitActionCommand['action']>();
@@ -464,9 +472,19 @@ export class TurnModule implements EngineModule {
     }
 
     const attackStat =
-      move.class === 'physical' ? attacker.stats.attack : attacker.stats.specialAttack;
+      move.class === 'physical'
+        ? this.getModifiedBattleStat(attacker.stats.attack, attacker.attackStage)
+        : this.getModifiedBattleStat(
+            attacker.stats.specialAttack,
+            attacker.specialAttackStage,
+          );
     const defenseStat =
-      move.class === 'physical' ? defender.stats.defense : defender.stats.specialDefense;
+      move.class === 'physical'
+        ? this.getModifiedBattleStat(defender.stats.defense, defender.defenseStage)
+        : this.getModifiedBattleStat(
+            defender.stats.specialDefense,
+            defender.specialDefenseStage,
+          );
     const stab =
       move.type === attackerSpecies.type1 || move.type === attackerSpecies.type2 ? 1.5 : 1.0;
     const typeEffectiveness = this.getTypeEffectiveness(
@@ -474,6 +492,7 @@ export class TurnModule implements EngineModule {
       defenderSpecies.type1,
       defenderSpecies.type2,
     );
+    const critical = this.isCriticalHit(attacker.criticalStage, context);
 
     const damage = this.calculateDamage(
       attacker.level,
@@ -482,6 +501,7 @@ export class TurnModule implements EngineModule {
       defenseStat,
       stab,
       typeEffectiveness,
+      critical,
       context,
     );
 
@@ -494,6 +514,7 @@ export class TurnModule implements EngineModule {
       damage,
       sourcePlayerId: attackerAction.playerId,
       moveName,
+      critical,
     });
 
     if (defender.health <= 0) {
@@ -643,23 +664,47 @@ export class TurnModule implements EngineModule {
     attackerAccuracyStage: number,
     defenderEvasionStage: number,
   ) {
-    const attackerModifier = this.getStageModifier(attackerAccuracyStage);
-    const defenderModifier = this.getStageModifier(defenderEvasionStage);
+    const attackerModifier = this.getAccuracyStageModifier(attackerAccuracyStage);
+    const defenderModifier = this.getAccuracyStageModifier(defenderEvasionStage);
     const rawChance = (moveAccuracy / 100) * (attackerModifier / defenderModifier);
     return Math.max(0, Math.min(1, rawChance));
   }
 
-  private getStageModifier(stage: number) {
-    const clampedStage = this.clampStage(stage);
+  private getAccuracyStageModifier(stage: number) {
+    const clampedStage = this.clampBattleStage(stage);
     if (clampedStage >= 0) {
       return (3 + clampedStage) / 3;
     }
     return 3 / (3 + Math.abs(clampedStage));
   }
 
-  private clampStage(stage: number) {
+  private clampBattleStage(stage: number) {
     const normalizedStage = Math.trunc(stage);
-    return Math.max(MIN_ACCURACY_STAGE, Math.min(MAX_ACCURACY_STAGE, normalizedStage));
+    return Math.max(MIN_STAT_STAGE, Math.min(MAX_STAT_STAGE, normalizedStage));
+  }
+
+  private getModifiedBattleStat(stat: number, stage: number) {
+    const modifier = this.getAccuracyStageModifier(stage);
+    return stat * modifier;
+  }
+
+  private clampCriticalStage(stage: number) {
+    const normalizedStage = Math.trunc(stage);
+    return Math.max(MIN_CRITICAL_STAGE, normalizedStage);
+  }
+
+  private getCriticalHitChance(stage: number) {
+    const clampedStage = this.clampCriticalStage(stage);
+    if (clampedStage >= CRITICAL_GUARANTEED_STAGE) {
+      return 1;
+    }
+
+    return CRITICAL_HIT_CHANCE_BY_STAGE[clampedStage as 0 | 1 | 2];
+  }
+
+  private isCriticalHit(stage: number, context: GameContext) {
+    const chance = this.getCriticalHitChance(stage);
+    return context.random() < chance;
   }
 
   private calculateDamage(
@@ -669,11 +714,13 @@ export class TurnModule implements EngineModule {
     defense: number,
     stab: number,
     typeEffectiveness: number,
+    critical: boolean,
     context: GameContext,
   ) {
     const baseDamage = (((2 * level) / 5 + 2) * power * (attack / defense)) / 50 + 2;
     const randomFactor = context.random() * (1.0 - 0.85) + 0.85;
-    const modifiers = stab * typeEffectiveness * randomFactor;
+    const criticalModifier = critical ? 1.5 : 1.0;
+    const modifiers = stab * typeEffectiveness * criticalModifier * randomFactor;
 
     return Math.floor(baseDamage * modifiers);
   }

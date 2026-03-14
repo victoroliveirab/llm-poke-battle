@@ -224,6 +224,20 @@ Attack accuracy rules:
 - `accuracyStage` and `evasionStage` are per-Pokemon stats initialized at `0` and clamped to `[-6, +6]`.
 - Missed attacks emit a miss outcome, apply no damage, and cannot faint a target.
 
+Critical hit rules (Gen VI+):
+
+- Critical hit checks happen after a move lands and before damage is finalized.
+- Critical stage odds: stage `0 = 1/24`, stage `1 = 1/8`, stage `2 = 1/2`, stage `3+ = guaranteed`.
+- Current engine default: all Pokemon start at `criticalStage = 0`.
+- Critical hits apply a `1.5x` damage multiplier.
+- Critical hits do not ignore attack/defense stat stages in this engine.
+
+Damage stat stage rules:
+
+- Pokemon also track `attackStage`, `defenseStage`, `specialAttackStage`, and `specialDefenseStage` (all initialized at `0`).
+- Physical moves use `attackStage` vs `defenseStage`; special moves use `specialAttackStage` vs `specialDefenseStage`.
+- Stat stage modifiers are clamped to `[-6, +6]` and are always applied, including on critical hits.
+
 Privacy/redaction rules:
 
 - Opponent party slots are returned as `REDACTED` until each Pokemon is revealed in battle.

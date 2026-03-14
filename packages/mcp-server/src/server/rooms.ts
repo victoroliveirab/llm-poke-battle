@@ -73,6 +73,7 @@ export type AttackOutcomeSnapshot = {
   targetPokemon: string | null;
   damage: number;
   executed: boolean;
+  critical: boolean;
 };
 
 export type SwitchOutcomeSnapshot = {
@@ -104,6 +105,7 @@ export type TurnActionTimelineEntrySnapshot =
       targetPokemon: string | null;
       damage: number;
       outcome: 'hit' | 'miss' | 'not_executed';
+      critical: boolean;
       reasoning: string;
     }
   | {
@@ -645,6 +647,7 @@ function buildTurnActionsSnapshot(
         targetPokemon: event.pokemonName,
         damage: event.damage,
         executed: true,
+        critical: event.critical,
       });
       if (sourcePlayer) {
         timeline.push({
@@ -655,6 +658,7 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.pokemonName,
           damage: event.damage,
           outcome: 'hit',
+          critical: event.critical,
           reasoning,
         });
       }
@@ -677,6 +681,7 @@ function buildTurnActionsSnapshot(
         targetPokemon: event.targetPokemonName,
         damage: 0,
         executed: false,
+        critical: false,
       });
       if (sourcePlayer) {
         timeline.push({
@@ -687,6 +692,7 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: 0,
           outcome: 'miss',
+          critical: false,
           reasoning,
         });
       }
@@ -758,6 +764,7 @@ function buildTurnActionsSnapshot(
         targetPokemon: null,
         damage: 0,
         executed: false,
+        critical: false,
       });
     }
 
@@ -775,6 +782,7 @@ function buildTurnActionsSnapshot(
         targetPokemon: null,
         damage: 0,
         outcome: 'not_executed',
+        critical: false,
         reasoning: submittedAction.reasoning,
       });
     }
@@ -902,6 +910,7 @@ function cloneAttackOutcomeSnapshot(
     targetPokemon: attackOutcome.targetPokemon,
     damage: attackOutcome.damage,
     executed: attackOutcome.executed,
+    critical: attackOutcome.critical,
   };
 }
 
@@ -942,6 +951,7 @@ function cloneTurnActionTimelineEntries(
         targetPokemon: entry.targetPokemon,
         damage: entry.damage,
         outcome: entry.outcome,
+        critical: entry.critical,
         reasoning: entry.reasoning,
       };
     }
