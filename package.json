@@ -1,0 +1,21 @@
+{
+  "name": "mcp-poke-battle",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd packages/mcp-server dev",
+    "start": "bun run --cwd packages/mcp-server start",
+    "room-snapshots": "bun run --cwd packages/mcp-server src/cli/roomSnapshots.ts",
+    "mcp-player": "bun run --cwd packages/mcp-server src/cli/mcpPlayer.ts",
+    "typecheck": "bun run --cwd packages/game-engine typecheck && bun run --cwd packages/battle-engine typecheck && bun run --cwd packages/mcp-server typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.8.2"
+  }
+}
