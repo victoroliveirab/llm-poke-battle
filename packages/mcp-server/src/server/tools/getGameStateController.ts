@@ -5,7 +5,8 @@ import type { ToolController } from '../toolController';
 
 export const getGameStateController: ToolController = {
   name: 'get_game_state',
-  description: 'Get the current game state for a room.',
+  description:
+    'Get caller-specific room state for lifecycle polling and game_over stop checks.',
   inputSchema: {
     type: 'object',
     properties: {

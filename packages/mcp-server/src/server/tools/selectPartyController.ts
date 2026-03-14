@@ -6,7 +6,7 @@ import type { ToolController } from "../toolController";
 export const selectPartyController: ToolController = {
   name: "select_party",
   description:
-    "Submit your 3-Pokemon party in PARTY_SELECTION using p1, p2, p3. When both players submit, state moves to GAME_LOOP.",
+    "Submit your 3-Pokemon party during PARTY_SELECTION. Once both parties are set, phase moves to GAME_LOOP.",
   inputSchema: {
     type: "object",
     properties: {

@@ -1,5 +1,6 @@
 import { asOptionalString } from "../parse";
 import { errorResult, jsonResult } from "../response";
+import { buildJoinRoomHarnessPayload } from "../harnessGuidance";
 import {
   MAX_PLAYERS_PER_ROOM,
   addPlayerToRoom,
@@ -13,7 +14,7 @@ import type { ToolController } from "../toolController";
 export const joinRoomController: ToolController = {
   name: "join_room",
   description:
-    "Create a room and join it when no parameter is provided, or join an existing room by handle. Idempotent per MCP session and room.",
+    "Create or join a room and return harness lifecycle instructions. Idempotent per MCP session and room.",
   inputSchema: {
     type: "object",
     properties: {
@@ -40,7 +41,11 @@ export const joinRoomController: ToolController = {
         player_id: existingMembership.playerId,
         public_name: existingMembership.publicName,
         players_in_room: listPlayersInRoom(room),
-        joined_existing: true
+        joined_existing: true,
+        ...buildJoinRoomHarnessPayload({
+          room,
+          membership: existingMembership
+        })
       });
     }
 
@@ -57,7 +62,11 @@ export const joinRoomController: ToolController = {
       player_id: playerId,
       public_name: publicName,
       players_in_room: listPlayersInRoom(room),
-      joined_existing: false
+      joined_existing: false,
+      ...buildJoinRoomHarnessPayload({
+        room,
+        membership: { playerId, publicName }
+      })
     });
   }
 };

@@ -13,7 +13,7 @@ import type { ToolController } from "../toolController";
 export const startGameController: ToolController = {
   name: "start_game",
   description:
-    "Start/reset the game in PARTY_SELECTION phase. Creator only and requires a full room.",
+    "Creator-only: start/reset the game in PARTY_SELECTION once the room is full.",
   inputSchema: {
     type: "object",
     properties: {

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Play Poke Battle'
+  short_description: 'Create/join a poke-battle room and auto-play via MCP'
+  default_prompt: '$play-pokebattle'

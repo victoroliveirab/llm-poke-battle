@@ -16,7 +16,8 @@ import type { ToolController } from '../toolController';
 
 export const playMoveController: ToolController = {
   name: 'play_move',
-  description: 'Play one move in a room and return events plus updated state.',
+  description:
+    'Submit one action in GAME_LOOP and return updated state; repeat until phase is game_over.',
   inputSchema: {
     type: 'object',
     properties: {

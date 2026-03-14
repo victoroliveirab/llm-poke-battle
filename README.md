@@ -40,6 +40,19 @@ The server listens on:
 codex mcp add poke-battle --url http://127.0.0.1:6969/mcp
 ```
 
+## Install play-pokebattle Skill
+
+Install the local Codex skill package:
+
+```bash
+./scripts/install-play-pokebattle-skill.sh
+```
+
+Invoke it as:
+
+- `$play-pokebattle`
+- `$play-pokebattle <ROOM_ID>`
+
 ## Turn Snapshot CLI
 
 Print full board snapshots for a room as turns resolve:
@@ -108,6 +121,76 @@ REPL commands:
 - `select_party`
 - `get_game_state`
 - `play_move`
+
+## Autonomous Harness Contract
+
+After each successful `join_room`, the response includes:
+
+- `harness_guidance_version` (`"v1"`)
+- `harness_guidance` (machine-readable lifecycle contract)
+- `harness_prompt` (concise text instructions suitable for LLM prompting)
+
+This makes `join_room` the bootstrap call for autonomous harnesses. No human input is required after join.
+
+Minimal flow:
+
+1. Call `join_room`.
+2. Follow `harness_guidance.next_action`.
+3. Continue lifecycle calls (creator polls `start_game` until success; non-creator polls `get_game_state` until party selection), then `select_party`, `play_move` + `get_game_state`.
+4. Stop only when phase is `game_over` and final state has been fetched.
+
+The contract is machine-actionable:
+
+- `harness_guidance.autonomy.human_input_required` is always `false`.
+- `harness_guidance.communication_policy` forbids user questions/confirmation requests.
+- `harness_guidance.response_policy.silent_while_running` is `true` and final report is for `game_over`/`terminal_error`.
+- `harness_guidance.next_action.tool_call` includes the exact next tool + arguments.
+- `harness_guidance.autonomous_loop` provides step-by-step loop instructions.
+- If `next_action.tool_call.poll_interval_ms` is set, the harness should poll that call on that interval.
+
+Example shape from `join_room`:
+
+```json
+{
+  "room_handle": "<uuid>",
+  "player_id": "<uuid>",
+  "public_name": "Player 1",
+  "harness_guidance_version": "v1",
+  "harness_guidance": {
+    "autonomy": {
+      "human_input_required": false,
+      "ask_human_for_help": false,
+      "mode": "fully_autonomous_after_join"
+    },
+    "communication_policy": {
+      "user_questions_allowed": false,
+      "confirmation_requests_allowed": false,
+      "option_offers_allowed": false,
+      "required_behavior": "execute_next_action_without_user_confirmation"
+    },
+    "response_policy": {
+      "silent_while_running": true,
+      "final_report_events": ["game_over", "terminal_error"]
+    },
+    "role": { "is_creator": true, "player_slot": 1 },
+    "next_action": {
+      "type": "start_game",
+      "instruction": "Room is full and you are creator. Call start_game now with room_handle.",
+      "human_input_required": false,
+      "tool_call": {
+        "tool": "start_game",
+        "arguments": { "room_handle": "<uuid>" },
+        "poll_interval_ms": null
+      }
+    },
+    "stop_condition": {
+      "phase_equals": "game_over",
+      "require_final_state_fetch": true
+    }
+  },
+  "harness_prompt": "Autonomous battle harness instructions: ..."
+}
+```
 
 Debug endpoints (read-only):
 
