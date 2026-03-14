@@ -42,6 +42,32 @@ export type InterTurnSwitchAction = {
   reasoning: string;
 };
 
+export type PartySelectionReasoning = {
+  p1: string;
+  p2: string;
+  p3: string;
+  p1Reason: string;
+  p2Reason: string;
+  p3Reason: string;
+  leadReason: string;
+};
+
+export type PartySelectionReasoningSnapshot = {
+  playerId: string;
+  publicName: string;
+  party: {
+    p1: string;
+    p2: string;
+    p3: string;
+  } | null;
+  reasoning: {
+    p1Reason: string;
+    p2Reason: string;
+    p3Reason: string;
+    leadReason: string;
+  } | null;
+};
+
 export type AttackOutcomeSnapshot = {
   attackName: string;
   targetPokemon: string | null;
@@ -136,6 +162,7 @@ export type Room = {
   gameStarted: boolean;
   pendingTurnActions: Map<string, SubmittedTurnAction>;
   pendingInterTurnSwitches: Map<string, InterTurnSwitchAction[]>;
+  partySelectionReasoningByPlayerId: Map<string, PartySelectionReasoning>;
   turnSnapshots: TurnSnapshot[];
   lastSnapshottedTurn: number;
   snapshotSubscribers: Set<RoomSnapshotSubscriber>;
@@ -166,6 +193,10 @@ export function createRoom(): Room {
     gameStarted: false,
     pendingTurnActions: new Map<string, SubmittedTurnAction>(),
     pendingInterTurnSwitches: new Map<string, InterTurnSwitchAction[]>(),
+    partySelectionReasoningByPlayerId: new Map<
+      string,
+      PartySelectionReasoning
+    >(),
     turnSnapshots: [],
     lastSnapshottedTurn: 0,
     snapshotSubscribers: new Set<RoomSnapshotSubscriber>(),
@@ -227,6 +258,7 @@ export function resetRoomGame(room: Room): Battle {
   room.game = game;
   room.pendingTurnActions.clear();
   room.pendingInterTurnSwitches.clear();
+  room.partySelectionReasoningByPlayerId.clear();
   room.turnSnapshots = [];
   room.lastSnapshottedTurn = 0;
   return game;
@@ -393,6 +425,74 @@ export function snapshotPendingInterTurnSwitches(
 
 export function clearPendingInterTurnSwitches(room: Room): void {
   room.pendingInterTurnSwitches.clear();
+}
+
+export function setPartySelectionReasoning(
+  room: Room,
+  playerId: string,
+  reasoning: PartySelectionReasoning,
+): void {
+  room.partySelectionReasoningByPlayerId.set(
+    playerId,
+    clonePartySelectionReasoning(reasoning),
+  );
+}
+
+export function getPartySelectionReasoning(
+  room: Room,
+  playerId: string,
+): PartySelectionReasoning | null {
+  const reasoning = room.partySelectionReasoningByPlayerId.get(playerId);
+  if (!reasoning) {
+    return null;
+  }
+
+  return clonePartySelectionReasoning(reasoning);
+}
+
+export function snapshotPartySelectionReasoning(
+  room: Room,
+): Map<string, PartySelectionReasoning> {
+  return new Map(
+    Array.from(room.partySelectionReasoningByPlayerId.entries()).map(
+      ([playerId, reasoning]) => [
+        playerId,
+        clonePartySelectionReasoning(reasoning),
+      ],
+    ),
+  );
+}
+
+export function listPartySelectionReasoningSnapshots(
+  room: Room,
+): PartySelectionReasoningSnapshot[] {
+  return listRoomPlayers(room).map((player) => {
+    const reasoning = room.partySelectionReasoningByPlayerId.get(player.playerId);
+    if (!reasoning) {
+      return {
+        playerId: player.playerId,
+        publicName: player.publicName,
+        party: null,
+        reasoning: null,
+      };
+    }
+
+    return {
+      playerId: player.playerId,
+      publicName: player.publicName,
+      party: {
+        p1: reasoning.p1,
+        p2: reasoning.p2,
+        p3: reasoning.p3,
+      },
+      reasoning: {
+        p1Reason: reasoning.p1Reason,
+        p2Reason: reasoning.p2Reason,
+        p3Reason: reasoning.p3Reason,
+        leadReason: reasoning.leadReason,
+      },
+    };
+  });
 }
 
 export function subscribeRoomTurnSnapshots(
@@ -829,6 +929,20 @@ function cloneTurnActionTimelineEntries(
       pokemonName: entry.pokemonName,
     };
   });
+}
+
+function clonePartySelectionReasoning(
+  reasoning: PartySelectionReasoning,
+): PartySelectionReasoning {
+  return {
+    p1: reasoning.p1,
+    p2: reasoning.p2,
+    p3: reasoning.p3,
+    p1Reason: reasoning.p1Reason,
+    p2Reason: reasoning.p2Reason,
+    p3Reason: reasoning.p3Reason,
+    leadReason: reasoning.leadReason,
+  };
 }
 
 function buildBattleForRoom(room: Room): Battle {

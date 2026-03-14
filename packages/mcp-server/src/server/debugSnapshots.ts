@@ -1,8 +1,10 @@
 import {
   getRoom,
   getRoomSnapshotSummary,
+  listPartySelectionReasoningSnapshots,
   listRoomTurnSnapshots,
   subscribeRoomTurnSnapshots,
+  type PartySelectionReasoningSnapshot,
   type Room,
   type TurnSnapshot,
 } from './rooms';
@@ -22,6 +24,7 @@ type SnapshotResponse = {
   phase: 'party_selection' | 'game_loop' | 'game_over';
   winner: string | null;
   latestTurn: number;
+  partySelectionReasoning: PartySelectionReasoningSnapshot[];
   snapshots: TurnSnapshot[];
 };
 
@@ -107,7 +110,25 @@ function buildSnapshotResponse(room: Room, fromTurn: number): SnapshotResponse {
     phase: summary.phase,
     winner: summary.winner,
     latestTurn: summary.latestTurn,
+    partySelectionReasoning: listPartySelectionReasoningSnapshots(room),
     snapshots: listRoomTurnSnapshots(room, fromTurn),
+  };
+}
+
+function buildRoomStatusPayload(room: Room): {
+  roomId: string;
+  phase: 'party_selection' | 'game_loop' | 'game_over';
+  winner: string | null;
+  latestTurn: number;
+  partySelectionReasoning: PartySelectionReasoningSnapshot[];
+} {
+  const summary = getRoomSnapshotSummary(room);
+  return {
+    roomId: summary.roomId,
+    phase: summary.phase,
+    winner: summary.winner,
+    latestTurn: summary.latestTurn,
+    partySelectionReasoning: listPartySelectionReasoningSnapshots(room),
   };
 }
 
@@ -159,13 +180,13 @@ function createSnapshotsStreamResponse(
           return;
         }
 
+        const status = buildRoomStatusPayload(room);
+        send('room_status', status);
         send('turn_snapshot', snapshot);
-        const summary = getRoomSnapshotSummary(room);
-        send('room_status', summary);
 
         if (
-          summary.phase === 'game_over' &&
-          summary.latestTurn <= snapshot.turn
+          status.phase === 'game_over' &&
+          status.latestTurn <= snapshot.turn
         ) {
           close();
         }
@@ -182,14 +203,14 @@ function createSnapshotsStreamResponse(
         fromTurn,
       });
 
+      const initialStatus = buildRoomStatusPayload(room);
+      send('room_status', initialStatus);
+
       for (const snapshot of listRoomTurnSnapshots(room, fromTurn)) {
         send('turn_snapshot', snapshot);
       }
 
-      const initialSummary = getRoomSnapshotSummary(room);
-      send('room_status', initialSummary);
-
-      if (initialSummary.phase === 'game_over') {
+      if (initialStatus.phase === 'game_over') {
         close();
       }
     },

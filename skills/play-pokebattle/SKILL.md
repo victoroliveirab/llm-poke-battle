@@ -57,8 +57,13 @@ If `room_handle` is provided:
 - Call `get_game_state({"room_handle":"<room_handle>"})`.
 - If phase is `party_selection` and your party is not selected:
   - Read `availablePokemon` and `requiredPartySize`.
-  - Choose the first `requiredPartySize` distinct names from `availablePokemon`.
-  - Call `select_party({"room_handle":"<room_handle>","p1":"...","p2":"...","p3":"..."})`.
+  - Assume both players draft from the same `availablePokemon` pool, but move sets can differ by player.
+  - Pick `requiredPartySize` distinct names that support a coherent strategy, not list order.
+  - Build for coverage: include answers for likely opposing picks and avoid a party that loses to one common counter-profile.
+  - Infer likely opponent picks from generally strong/flexible options in the pool and draft to pressure those picks.
+  - Call `select_party({"room_handle":"<room_handle>","p1":"...","p2":"...","p3":"...","p1_reason":"<why pick 1>","p2_reason":"<why pick 2>","p3_reason":"<why pick 3>","lead_reason":"<why p1 should lead>"})`.
+  - In each `p*_reason`, explain both strategic role and what expected opponent choices this pick covers.
+  - `lead_reason` must give extra depth because `p1` opens the battle.
 - If your party is already selected, keep polling `get_game_state` every 1000ms.
 
 4. Game loop:

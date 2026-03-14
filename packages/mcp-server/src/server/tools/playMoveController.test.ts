@@ -51,6 +51,11 @@ async function setupGameLoop(): Promise<SessionSetup> {
     p1: 'Charizard',
     p2: 'Raichu',
     p3: 'Nidoking',
+    p1_reason: 'Lead with Charizard for immediate pressure and broad coverage.',
+    p2_reason: 'Raichu gives speed control and electric coverage from the bench.',
+    p3_reason: 'Nidoking provides physical coverage and mid-game pivot options.',
+    lead_reason:
+      'Charizard opens because it has the safest opening attacks into most matchups and establishes tempo.',
   };
   await selectPartyController.handle(partyArgs, { sessionState: player1Session });
   await selectPartyController.handle(partyArgs, { sessionState: player2Session });

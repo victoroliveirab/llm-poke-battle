@@ -17,6 +17,22 @@ type BoardPlayerSnapshot = {
   bench: SnapshotPokemon[];
 };
 
+type PartySelectionReasoningSnapshot = {
+  playerId: string;
+  publicName: string;
+  party: {
+    p1: string;
+    p2: string;
+    p3: string;
+  } | null;
+  reasoning: {
+    p1Reason: string;
+    p2Reason: string;
+    p3Reason: string;
+    leadReason: string;
+  } | null;
+};
+
 type SubmittedTurnAction =
   | {
       type: 'attack';
@@ -102,6 +118,7 @@ type SnapshotResponse = {
   phase: 'party_selection' | 'game_loop' | 'game_over';
   winner: string | null;
   latestTurn: number;
+  partySelectionReasoning: PartySelectionReasoningSnapshot[];
   snapshots: TurnSnapshot[];
 };
 
@@ -110,6 +127,7 @@ type RoomStatusEvent = {
   phase: 'party_selection' | 'game_loop' | 'game_over';
   winner: string | null;
   latestTurn: number;
+  partySelectionReasoning: PartySelectionReasoningSnapshot[];
 };
 
 type CliOptions = {
@@ -143,6 +161,7 @@ async function main() {
 
   if (options.once) {
     const response = await fetchSnapshots(options, options.fromTurn);
+    printPartySelectionReasoning(response.partySelectionReasoning);
     lastPrintedTurn = printSnapshots(
       response.snapshots,
       printedTurns,
@@ -277,6 +296,7 @@ async function watchViaSse(
   const decoder = new TextDecoder();
   let buffer = '';
   let lastPrintedTurn = initialLastPrintedTurn;
+  let printedPartyReasoning = false;
 
   while (true) {
     const chunk = await reader.read();
@@ -306,6 +326,13 @@ async function watchViaSse(
       if (event.event === 'room_status') {
         const status = JSON.parse(event.data) as RoomStatusEvent;
         if (
+          !printedPartyReasoning &&
+          hasAnyPartySelectionReasoning(status.partySelectionReasoning)
+        ) {
+          printPartySelectionReasoning(status.partySelectionReasoning);
+          printedPartyReasoning = true;
+        }
+        if (
           status.phase === 'game_over' &&
           status.latestTurn <= lastPrintedTurn
         ) {
@@ -324,9 +351,17 @@ async function watchViaPolling(
 ) {
   let fromTurn = Math.max(options.fromTurn, initialLastPrintedTurn + 1);
   let lastPrintedTurn = initialLastPrintedTurn;
+  let printedPartyReasoning = false;
 
   while (true) {
     const response = await fetchSnapshots(options, fromTurn);
+    if (
+      !printedPartyReasoning &&
+      hasAnyPartySelectionReasoning(response.partySelectionReasoning)
+    ) {
+      printPartySelectionReasoning(response.partySelectionReasoning);
+      printedPartyReasoning = true;
+    }
     lastPrintedTurn = printSnapshots(
       response.snapshots,
       printedTurns,
@@ -509,6 +544,50 @@ function printPokemon(label: string, pokemon: SnapshotPokemon) {
   );
   for (const move of pokemon.moves) {
     console.log(`${move.name} (${move.remainingPP} / ${move.maxPP} PP)`);
+  }
+  console.log('');
+}
+
+function hasAnyPartySelectionReasoning(
+  entries: PartySelectionReasoningSnapshot[] | undefined,
+): boolean {
+  if (!entries || entries.length === 0) {
+    return false;
+  }
+
+  return entries.some((entry) => entry.reasoning !== null);
+}
+
+function printPartySelectionReasoning(
+  entries: PartySelectionReasoningSnapshot[] | undefined,
+) {
+  if (!entries || entries.length === 0) {
+    return;
+  }
+
+  if (!hasAnyPartySelectionReasoning(entries)) {
+    return;
+  }
+
+  console.log('=== PARTY SELECTION REASONING ===');
+  for (const entry of entries) {
+    if (!entry.party || !entry.reasoning) {
+      console.log(`${entry.publicName}: not submitted yet`);
+      continue;
+    }
+
+    console.log(
+      `${entry.publicName}: p1=${entry.party.p1} | reason=${entry.reasoning.p1Reason}`,
+    );
+    console.log(
+      `${entry.publicName}: p2=${entry.party.p2} | reason=${entry.reasoning.p2Reason}`,
+    );
+    console.log(
+      `${entry.publicName}: p3=${entry.party.p3} | reason=${entry.reasoning.p3Reason}`,
+    );
+    console.log(
+      `${entry.publicName}: lead=${entry.party.p1} | lead_reason=${entry.reasoning.leadReason}`,
+    );
   }
   console.log('');
 }

@@ -94,7 +94,7 @@ One CLI process equals one MCP session/player. To run a full match without LLMs,
 5. Terminal A command:
 `start`
 6. Both terminals command:
-`party <p1> <p2> <p3>`
+`party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>`
 7. Both terminals command each turn:
 `move attack <attackName> --reason <reasoning>` or `move switch <pokemonName> --reason <reasoning>`
 
@@ -106,7 +106,7 @@ REPL commands:
 - `tools`
 - `join [room_handle]`
 - `start`
-- `party <p1> <p2> <p3>`
+- `party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>`
 - `state`
 - `move attack <attackName> --reason <reasoning>`
 - `move switch <pokemonName> --reason <reasoning>`
@@ -138,6 +138,10 @@ Minimal flow:
 2. Follow `harness_guidance.next_action`.
 3. Continue lifecycle calls (creator polls `start_game` until success; non-creator polls `get_game_state` until party selection), then `select_party`, `play_move` + `get_game_state`.
 4. Stop only when phase is `game_over` and final state has been fetched.
+
+`select_party` requires four non-empty reasoning fields:
+- `p1_reason`, `p2_reason`, `p3_reason` for each pick.
+- `lead_reason` specifically explaining why `p1` is chosen as the opening lead.
 
 `play_move` requires `action.reasoning` (non-empty string) for both `attack` and `switch`.
 For forced replacement switches:
@@ -209,7 +213,7 @@ Debug endpoints (read-only):
 
 Game phases:
 
-- `party_selection`: starts after `start_game`; each player must call `select_party` with `p1`, `p2`, `p3`.
+- `party_selection`: starts after `start_game`; each player must call `select_party` with `p1`, `p2`, `p3`, `p1_reason`, `p2_reason`, `p3_reason`, and `lead_reason`.
 - `game_loop`: starts automatically once both players submit valid parties.
 - `game_over`: reached when a winner is decided.
 

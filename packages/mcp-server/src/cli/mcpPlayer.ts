@@ -51,7 +51,7 @@ Commands:
   tools
   join [room_handle]
   start
-  party <p1> <p2> <p3>
+  party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>
   state
   move attack <attackName> --reason <reasoning>
   move switch <pokemonName> --reason <reasoning>
@@ -59,6 +59,9 @@ Commands:
   last
   quit
 `;
+
+const PARTY_USAGE =
+  'Usage: party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>';
 
 class HttpMcpClient implements McpClient {
   private readonly endpoint: string;
@@ -338,9 +341,16 @@ async function main() {
         commandLine = 'start';
       } else if (line === '4') {
         const p1 = await promptRequired(rl, 'Party slot 1: ');
+        const p1Reason = await promptRequired(rl, 'Party slot 1 reasoning: ');
         const p2 = await promptRequired(rl, 'Party slot 2: ');
+        const p2Reason = await promptRequired(rl, 'Party slot 2 reasoning: ');
         const p3 = await promptRequired(rl, 'Party slot 3: ');
-        commandLine = `party ${p1} ${p2} ${p3}`;
+        const p3Reason = await promptRequired(rl, 'Party slot 3 reasoning: ');
+        const leadReason = await promptRequired(
+          rl,
+          'Lead reasoning (why slot 1 opens): ',
+        );
+        commandLine = `party ${p1} ${p2} ${p3} --p1-reason ${p1Reason} --p2-reason ${p2Reason} --p3-reason ${p3Reason} --lead-reason ${leadReason}`;
       } else if (line === '5') {
         commandLine = 'state';
       } else if (line === '6') {
@@ -412,15 +422,17 @@ async function runCommand(params: {
   }
 
   if (command === 'party') {
-    if (tokens.length !== 4) {
-      throw new Error('Usage: party <p1> <p2> <p3>');
-    }
+    const parsedParty = parsePartyCommand(tokens);
     const roomHandle = assertRoomHandle(currentRoomHandle);
     const result = await invokeTool(client, 'select_party', {
       room_handle: roomHandle,
-      p1: tokens[1],
-      p2: tokens[2],
-      p3: tokens[3],
+      p1: parsedParty.p1,
+      p2: parsedParty.p2,
+      p3: parsedParty.p3,
+      p1_reason: parsedParty.p1Reason,
+      p2_reason: parsedParty.p2Reason,
+      p3_reason: parsedParty.p3Reason,
+      lead_reason: parsedParty.leadReason,
     });
     return { nextRoomHandle: roomHandle, lastResult: result };
   }
@@ -557,6 +569,90 @@ function parseArgs(argv: string[]): CliOptions | null {
   };
 }
 
+function parsePartyCommand(tokens: string[]): {
+  p1: string;
+  p2: string;
+  p3: string;
+  p1Reason: string;
+  p2Reason: string;
+  p3Reason: string;
+  leadReason: string;
+} {
+  if (tokens.length < 4) {
+    throw new Error(PARTY_USAGE);
+  }
+
+  const p1 = tokens[1];
+  const p2 = tokens[2];
+  const p3 = tokens[3];
+  if (!p1 || !p2 || !p3) {
+    throw new Error(PARTY_USAGE);
+  }
+
+  const requiredFlags = [
+    '--p1-reason',
+    '--p2-reason',
+    '--p3-reason',
+    '--lead-reason',
+  ] as const;
+  const flagIndexes = new Map<string, number>();
+  for (const flag of requiredFlags) {
+    const index = tokens.findIndex((token) => token === flag);
+    if (index < 4) {
+      throw new Error(PARTY_USAGE);
+    }
+    flagIndexes.set(flag, index);
+  }
+
+  const sortedFlags = [...requiredFlags].sort(
+    (left, right) =>
+      (flagIndexes.get(left) ?? Number.MAX_SAFE_INTEGER) -
+      (flagIndexes.get(right) ?? Number.MAX_SAFE_INTEGER),
+  );
+  const firstFlagIndex = flagIndexes.get(sortedFlags[0] ?? '') ?? -1;
+  if (firstFlagIndex !== 4) {
+    throw new Error(PARTY_USAGE);
+  }
+
+  const valueByFlag = new Map<string, string>();
+  for (let i = 0; i < sortedFlags.length; i += 1) {
+    const flag = sortedFlags[i];
+    if (!flag) {
+      continue;
+    }
+
+    const start = (flagIndexes.get(flag) ?? -1) + 1;
+    const nextFlag = sortedFlags[i + 1];
+    const end =
+      nextFlag && flagIndexes.has(nextFlag)
+        ? (flagIndexes.get(nextFlag) ?? tokens.length)
+        : tokens.length;
+    const value = tokens.slice(start, end).join(' ').trim();
+    if (value.length === 0) {
+      throw new Error(PARTY_USAGE);
+    }
+    valueByFlag.set(flag, value);
+  }
+
+  const p1Reason = valueByFlag.get('--p1-reason');
+  const p2Reason = valueByFlag.get('--p2-reason');
+  const p3Reason = valueByFlag.get('--p3-reason');
+  const leadReason = valueByFlag.get('--lead-reason');
+  if (!p1Reason || !p2Reason || !p3Reason || !leadReason) {
+    throw new Error(PARTY_USAGE);
+  }
+
+  return {
+    p1,
+    p2,
+    p3,
+    p1Reason,
+    p2Reason,
+    p3Reason,
+    leadReason,
+  };
+}
+
 function normalizeInputLine(line: string): string {
   if (!line.startsWith('/')) {
     return line;
@@ -590,7 +686,7 @@ function printActionMenu() {
   console.log('  1) join/create room');
   console.log('  2) join specific room');
   console.log('  3) start game');
-  console.log('  4) select party');
+  console.log('  4) select party + reasoning');
   console.log('  5) get game state');
   console.log('  6) attack move');
   console.log('  7) switch pokemon');

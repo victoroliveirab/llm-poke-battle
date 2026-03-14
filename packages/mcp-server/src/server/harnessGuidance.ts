@@ -192,8 +192,9 @@ export function buildJoinRoomHarnessPayload(params: {
           : 'Non-creator path: never call start_game before game starts.',
       ],
       party_selection: [
-        'When phase is party_selection and your_party_selected is false, call select_party once with p1, p2, p3.',
+        'When phase is party_selection and your_party_selected is false, call select_party once with p1, p2, p3 plus p1_reason, p2_reason, p3_reason, and lead_reason.',
         'Choose party members from availablePokemon in state.',
+        'The first pick (p1) is your lead. lead_reason must explicitly explain why this opener is strongest for your plan.',
         'If your party is already selected, keep polling get_game_state until phase becomes game_loop.',
       ],
       game_loop: [
@@ -319,12 +320,14 @@ function inferNextAction(params: {
       };
       for (let slot = 1; slot <= requiredPartySize; slot += 1) {
         partyArgs[`p${slot}`] = `<PokemonName${slot}>`;
+        partyArgs[`p${slot}_reason`] = `<ReasoningForPick${slot}>`;
       }
+      partyArgs.lead_reason = '<LeadReasoningForP1>';
 
       return {
         type: 'select_party',
         instruction:
-          'Call select_party once now with p1, p2, p3 chosen from availablePokemon.',
+          'Call select_party once now with p1, p2, p3 chosen from availablePokemon plus p1_reason, p2_reason, p3_reason, and lead_reason.',
         human_input_required: false,
         tool_call: {
           tool: 'select_party',
@@ -446,6 +449,7 @@ function buildHarnessPrompt(params: {
     '- No human input is required after this join_room response.',
     '- Never ask a human for next steps. Keep polling and acting per this contract.',
     '- Lifecycle: start_game (creator only) -> select_party -> play_move loop -> stop at game_over.',
+    '- For select_party, include p1_reason, p2_reason, p3_reason, and lead_reason. p1 is your lead and lead_reason must explain the opening plan in detail.',
     '- For every play_move call, include action.reasoning (free text) explaining the decision.',
     '- Forced switch rule: if multiple legal replacements exist, explain why the selected one is best; if only one exists, say it is the only legal choice.',
     '- Before game start: creator polls start_game, non-creator polls get_game_state.',
@@ -470,7 +474,7 @@ function buildAutonomousLoop(params: {
       ? `- poll start_game({"room_handle":"${roomHandle}"}) every 1000ms until it succeeds`
       : `- poll get_game_state({"room_handle":"${roomHandle}"}) every 1000ms until phase is party_selection and your party is not selected`,
     `- once game_started=true, call get_game_state({"room_handle":"${roomHandle}"})`,
-    `- if state.phase=="party_selection" and your_party_selected=false, call select_party({"room_handle":"${roomHandle}","p1":"<PokemonName1>","p2":"<PokemonName2>","p3":"<PokemonName3>"})`,
+    `- if state.phase=="party_selection" and your_party_selected=false, call select_party({"room_handle":"${roomHandle}","p1":"<PokemonName1>","p2":"<PokemonName2>","p3":"<PokemonName3>","p1_reason":"<ReasoningForPick1>","p2_reason":"<ReasoningForPick2>","p3_reason":"<ReasoningForPick3>","lead_reason":"<LeadReasoningForP1>"})`,
     `- if state.phase=="party_selection" and your_party_selected=true, continue polling get_game_state({"room_handle":"${roomHandle}"})`,
     `- if state.phase=="game_loop", choose attack or switch and call play_move({"room_handle":"${roomHandle}","action":{"type":"attack","reasoning":"<Reasoning>","payload":{"attackName":"<AttackName>"}}})`,
     `- if play_move returns error "Action already taken", poll get_game_state({"room_handle":"${roomHandle}"}) and continue`,

@@ -47,6 +47,8 @@ describe('join_room json contract', () => {
     expect(harnessPrompt).toContain(
       'If you joined an existing room, start polling get_game_state until you should pick a party.',
     );
+    expect(harnessPrompt).toContain('p1_reason');
+    expect(harnessPrompt).toContain('lead_reason');
     expect(harnessPrompt).toContain('action.reasoning');
     expect(harnessPrompt).toContain('Forced switch rule:');
 
@@ -83,6 +85,12 @@ describe('join_room json contract', () => {
     ).toBe(true);
     expect(
       autonomousLoop.some((step) => step.includes('"reasoning":"<Reasoning>"')),
+    ).toBe(true);
+    expect(
+      autonomousLoop.some((step) => step.includes('"p1_reason":"<ReasoningForPick1>"')),
+    ).toBe(true);
+    expect(
+      autonomousLoop.some((step) => step.includes('"lead_reason":"<LeadReasoningForP1>"')),
     ).toBe(true);
     expect(role.is_creator).toBe(true);
     expect(role.player_slot).toBe(1);
@@ -203,5 +211,9 @@ describe('join_room json contract', () => {
     expect(args.p1).toBe('<PokemonName1>');
     expect(args.p2).toBe('<PokemonName2>');
     expect(args.p3).toBe('<PokemonName3>');
+    expect(args.p1_reason).toBe('<ReasoningForPick1>');
+    expect(args.p2_reason).toBe('<ReasoningForPick2>');
+    expect(args.p3_reason).toBe('<ReasoningForPick3>');
+    expect(args.lead_reason).toBe('<LeadReasoningForP1>');
   });
 });
