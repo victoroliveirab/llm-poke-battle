@@ -94,9 +94,9 @@ One CLI process equals one MCP session/player. To run a full match without LLMs,
 5. Terminal A command:
 `start`
 6. Both terminals command:
-`party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>`
+`party <p1> <p2> <p3>`
 7. Both terminals command each turn:
-`move attack <attackName> --reason <reasoning>` or `move switch <pokemonName> --reason <reasoning>`
+`move attack <attackName>` or `move switch <pokemonName>`
 
 The CLI shows a guided action menu every loop and uses a `>>` prompt to select actions (numeric shortcuts), while still accepting free-form commands.
 
@@ -106,10 +106,10 @@ REPL commands:
 - `tools`
 - `join [room_handle]`
 - `start`
-- `party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>`
+- `party <p1> <p2> <p3>`
 - `state`
-- `move attack <attackName> --reason <reasoning>`
-- `move switch <pokemonName> --reason <reasoning>`
+- `move attack <attackName>`
+- `move switch <pokemonName>`
 - `tool <tool_name> <json_args>`
 - `last`
 - `quit`

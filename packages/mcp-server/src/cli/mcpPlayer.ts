@@ -35,6 +35,7 @@ type LastResult =
 const STARTUP_TIMEOUT_MS = 8000;
 const REQUEST_TIMEOUT_MS = 15000;
 const MCP_PROTOCOL_VERSION = '2025-11-25';
+const HUMAN_CHOICE_REASONING = 'human choice';
 
 const HELP_TEXT = `Usage:
   bun run mcp-player -- [options]
@@ -51,17 +52,18 @@ Commands:
   tools
   join [room_handle]
   start
-  party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>
+  party <p1> <p2> <p3>
   state
-  move attack <attackName> --reason <reasoning>
-  move switch <pokemonName> --reason <reasoning>
+  move attack <attackName>
+  move switch <pokemonName>
   tool <tool_name> <json_args>
   last
   quit
 `;
 
-const PARTY_USAGE =
-  'Usage: party <p1> <p2> <p3> --p1-reason <reasoning> --p2-reason <reasoning> --p3-reason <reasoning> --lead-reason <reasoning>';
+const PARTY_USAGE = 'Usage: party <p1> <p2> <p3>';
+const MOVE_USAGE =
+  'Usage: move attack <attackName> | move switch <pokemonName>';
 
 class HttpMcpClient implements McpClient {
   private readonly endpoint: string;
@@ -341,26 +343,17 @@ async function main() {
         commandLine = 'start';
       } else if (line === '4') {
         const p1 = await promptRequired(rl, 'Party slot 1: ');
-        const p1Reason = await promptRequired(rl, 'Party slot 1 reasoning: ');
         const p2 = await promptRequired(rl, 'Party slot 2: ');
-        const p2Reason = await promptRequired(rl, 'Party slot 2 reasoning: ');
         const p3 = await promptRequired(rl, 'Party slot 3: ');
-        const p3Reason = await promptRequired(rl, 'Party slot 3 reasoning: ');
-        const leadReason = await promptRequired(
-          rl,
-          'Lead reasoning (why slot 1 opens): ',
-        );
-        commandLine = `party ${p1} ${p2} ${p3} --p1-reason ${p1Reason} --p2-reason ${p2Reason} --p3-reason ${p3Reason} --lead-reason ${leadReason}`;
+        commandLine = `party ${p1} ${p2} ${p3}`;
       } else if (line === '5') {
         commandLine = 'state';
       } else if (line === '6') {
         const attackName = await promptRequired(rl, 'Attack name: ');
-        const reasoning = await promptRequired(rl, 'Reasoning: ');
-        commandLine = `move attack ${attackName} --reason ${reasoning}`;
+        commandLine = `move attack ${attackName}`;
       } else if (line === '7') {
         const pokemonName = await promptRequired(rl, 'Pokemon to switch to: ');
-        const reasoning = await promptRequired(rl, 'Reasoning: ');
-        commandLine = `move switch ${pokemonName} --reason ${reasoning}`;
+        commandLine = `move switch ${pokemonName}`;
       } else if (line === '8') {
         const toolName = await promptRequired(rl, 'Tool name: ');
         const rawArgs = await promptRequired(rl, 'Tool JSON args (object): ');
@@ -429,10 +422,10 @@ async function runCommand(params: {
       p1: parsedParty.p1,
       p2: parsedParty.p2,
       p3: parsedParty.p3,
-      p1_reason: parsedParty.p1Reason,
-      p2_reason: parsedParty.p2Reason,
-      p3_reason: parsedParty.p3Reason,
-      lead_reason: parsedParty.leadReason,
+      p1_reason: HUMAN_CHOICE_REASONING,
+      p2_reason: HUMAN_CHOICE_REASONING,
+      p3_reason: HUMAN_CHOICE_REASONING,
+      lead_reason: HUMAN_CHOICE_REASONING,
     });
     return { nextRoomHandle: roomHandle, lastResult: result };
   }
@@ -446,26 +439,18 @@ async function runCommand(params: {
   }
 
   if (command === 'move') {
-    if (tokens.length < 5) {
-      throw new Error(
-        'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
-      );
+    if (tokens.length < 3) {
+      throw new Error(MOVE_USAGE);
     }
 
     const roomHandle = assertRoomHandle(currentRoomHandle);
     const mode = tokens[1];
     const reasonFlagIndex = tokens.findIndex((token) => token === '--reason');
-    if (reasonFlagIndex < 0 || reasonFlagIndex === tokens.length - 1) {
-      throw new Error(
-        'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
-      );
-    }
-    const payloadValue = tokens.slice(2, reasonFlagIndex).join(' ');
-    const reasoning = tokens.slice(reasonFlagIndex + 1).join(' ');
-    if (!payloadValue || !reasoning) {
-      throw new Error(
-        'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
-      );
+    const payloadTokens =
+      reasonFlagIndex >= 0 ? tokens.slice(2, reasonFlagIndex) : tokens.slice(2);
+    const payloadValue = payloadTokens.join(' ').trim();
+    if (!payloadValue) {
+      throw new Error(MOVE_USAGE);
     }
 
     if (mode === 'attack') {
@@ -473,7 +458,7 @@ async function runCommand(params: {
         room_handle: roomHandle,
         action: {
           type: 'attack',
-          reasoning,
+          reasoning: HUMAN_CHOICE_REASONING,
           payload: {
             attackName: payloadValue,
           },
@@ -487,7 +472,7 @@ async function runCommand(params: {
         room_handle: roomHandle,
         action: {
           type: 'switch',
-          reasoning,
+          reasoning: HUMAN_CHOICE_REASONING,
           payload: {
             newPokemon: payloadValue,
           },
@@ -496,9 +481,7 @@ async function runCommand(params: {
       return { nextRoomHandle: roomHandle, lastResult: result };
     }
 
-    throw new Error(
-      'Usage: move attack <attackName> --reason <reasoning> | move switch <pokemonName> --reason <reasoning>',
-    );
+    throw new Error(MOVE_USAGE);
   }
 
   if (command === 'tool') {
@@ -573,10 +556,6 @@ function parsePartyCommand(tokens: string[]): {
   p1: string;
   p2: string;
   p3: string;
-  p1Reason: string;
-  p2Reason: string;
-  p3Reason: string;
-  leadReason: string;
 } {
   if (tokens.length < 4) {
     throw new Error(PARTY_USAGE);
@@ -589,67 +568,10 @@ function parsePartyCommand(tokens: string[]): {
     throw new Error(PARTY_USAGE);
   }
 
-  const requiredFlags = [
-    '--p1-reason',
-    '--p2-reason',
-    '--p3-reason',
-    '--lead-reason',
-  ] as const;
-  const flagIndexes = new Map<string, number>();
-  for (const flag of requiredFlags) {
-    const index = tokens.findIndex((token) => token === flag);
-    if (index < 4) {
-      throw new Error(PARTY_USAGE);
-    }
-    flagIndexes.set(flag, index);
-  }
-
-  const sortedFlags = [...requiredFlags].sort(
-    (left, right) =>
-      (flagIndexes.get(left) ?? Number.MAX_SAFE_INTEGER) -
-      (flagIndexes.get(right) ?? Number.MAX_SAFE_INTEGER),
-  );
-  const firstFlagIndex = flagIndexes.get(sortedFlags[0] ?? '') ?? -1;
-  if (firstFlagIndex !== 4) {
-    throw new Error(PARTY_USAGE);
-  }
-
-  const valueByFlag = new Map<string, string>();
-  for (let i = 0; i < sortedFlags.length; i += 1) {
-    const flag = sortedFlags[i];
-    if (!flag) {
-      continue;
-    }
-
-    const start = (flagIndexes.get(flag) ?? -1) + 1;
-    const nextFlag = sortedFlags[i + 1];
-    const end =
-      nextFlag && flagIndexes.has(nextFlag)
-        ? (flagIndexes.get(nextFlag) ?? tokens.length)
-        : tokens.length;
-    const value = tokens.slice(start, end).join(' ').trim();
-    if (value.length === 0) {
-      throw new Error(PARTY_USAGE);
-    }
-    valueByFlag.set(flag, value);
-  }
-
-  const p1Reason = valueByFlag.get('--p1-reason');
-  const p2Reason = valueByFlag.get('--p2-reason');
-  const p3Reason = valueByFlag.get('--p3-reason');
-  const leadReason = valueByFlag.get('--lead-reason');
-  if (!p1Reason || !p2Reason || !p3Reason || !leadReason) {
-    throw new Error(PARTY_USAGE);
-  }
-
   return {
     p1,
     p2,
     p3,
-    p1Reason,
-    p2Reason,
-    p3Reason,
-    leadReason,
   };
 }
 
@@ -686,7 +608,7 @@ function printActionMenu() {
   console.log('  1) join/create room');
   console.log('  2) join specific room');
   console.log('  3) start game');
-  console.log('  4) select party + reasoning');
+  console.log('  4) select party');
   console.log('  5) get game state');
   console.log('  6) attack move');
   console.log('  7) switch pokemon');
