@@ -13,7 +13,7 @@ import type { ToolController } from "../toolController";
 export const startGameController: ToolController = {
   name: "start_game",
   description:
-    "Creator-only: start/reset the game in PARTY_SELECTION once the room is full.",
+    "Creator-only: start the game in PARTY_SELECTION once the room is full.",
   inputSchema: {
     type: "object",
     properties: {
@@ -36,6 +36,10 @@ export const startGameController: ToolController = {
 
     if (room.creatorPlayerId !== membership.playerId) {
       return errorResult("Only the room creator can start the game.");
+    }
+
+    if (room.gameStarted) {
+      return errorResult("Game already started.");
     }
 
     if (!isRoomFull(room)) {

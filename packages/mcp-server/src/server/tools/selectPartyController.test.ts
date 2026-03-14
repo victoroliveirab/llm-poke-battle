@@ -200,7 +200,7 @@ describe('select_party reasoning requirement', () => {
     expect(player1EntryReasoning?.leadReason).toBe(leadReason);
   });
 
-  it('clears stored party reasoning when start_game resets the room', async () => {
+  it('returns an error when start_game is called after the game has started', async () => {
     const setup = await setupPartySelection();
 
     await selectPartyController.handle(
@@ -230,27 +230,33 @@ describe('select_party reasoning requirement', () => {
       { sessionState: setup.player2Session },
     );
 
-    const resetResponse = await startGameController.handle(
+    const secondStartResponse = await startGameController.handle(
       { room_handle: setup.roomHandle },
       { sessionState: setup.player1Session },
     );
-    if (resetResponse.isError) {
-      throw new Error('Expected start_game reset to succeed.');
-    }
+    expect(secondStartResponse.isError).toBe(true);
+    expect(secondStartResponse.content[0]?.text).toContain('Game already started.');
 
     const room = getRoom(setup.roomHandle);
     if (!room) {
-      throw new Error('Expected room after reset.');
+      throw new Error('Expected room for assertions.');
     }
     const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)
       ?.playerId;
     const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)
       ?.playerId;
     if (!player1Id || !player2Id) {
-      throw new Error('Expected player ids for reset assertions.');
+      throw new Error('Expected player ids for assertions.');
     }
 
-    expect(getPartySelectionReasoning(room, player1Id)).toBeNull();
-    expect(getPartySelectionReasoning(room, player2Id)).toBeNull();
+    expect(getPartySelectionReasoning(room, player1Id)).not.toBeNull();
+    expect(getPartySelectionReasoning(room, player2Id)).not.toBeNull();
+
+    const stateAfterFailedRestart = await getGameStateController.handle(
+      { room_handle: setup.roomHandle },
+      { sessionState: setup.player1Session },
+    );
+    const statePayload = parseJsonPayload(stateAfterFailedRestart);
+    expect(statePayload.phase).toBe('game_loop');
   });
 });
