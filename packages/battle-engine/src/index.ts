@@ -160,10 +160,14 @@ export class Battle {
 
       return {
         accuracyStage: entry.accuracyStage,
+        attackStage: entry.attackStage,
+        defenseStage: entry.defenseStage,
         evasionStage: entry.evasionStage,
         health: isRevealedPokemon ? entry.health : null,
         isActive: index === 0,
         name: isRevealedPokemon ? entry.name : '???',
+        specialAttackStage: entry.specialAttackStage,
+        specialDefenseStage: entry.specialDefenseStage,
         used: entry.used,
         moves: entry.moves.map((move) =>
           move.used

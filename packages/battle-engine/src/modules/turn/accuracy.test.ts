@@ -93,8 +93,16 @@ describe('turn accuracy resolution', () => {
     }
 
     expect('accuracyStage' in activePokemon).toBe(true);
+    expect('attackStage' in activePokemon).toBe(true);
+    expect('defenseStage' in activePokemon).toBe(true);
     expect('evasionStage' in activePokemon).toBe(true);
+    expect('specialAttackStage' in activePokemon).toBe(true);
+    expect('specialDefenseStage' in activePokemon).toBe(true);
     expect('accuracy' in activePokemon).toBe(false);
+    expect(activePokemon.attackStage).toBe(0);
+    expect(activePokemon.defenseStage).toBe(0);
+    expect(activePokemon.specialAttackStage).toBe(0);
+    expect(activePokemon.specialDefenseStage).toBe(0);
   });
 
   it('consumes PP and emits attack.missed without applying damage on miss', () => {

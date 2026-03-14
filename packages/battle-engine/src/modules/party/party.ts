@@ -21,11 +21,15 @@ export type PartyStats = {
 
 export type PartyEntry = {
   accuracyStage: number;
+  attackStage: number;
+  defenseStage: number;
   evasionStage: number;
   health: number;
   level: number;
   moves: PartyMove[];
   name: string;
+  specialAttackStage: number;
+  specialDefenseStage: number;
   stats: PartyStats;
   used: boolean;
 };
@@ -175,6 +179,8 @@ export class Party {
 
     return {
       accuracyStage: 0,
+      attackStage: 0,
+      defenseStage: 0,
       evasionStage: 0,
       health: stats.hp,
       level: this.level,
@@ -188,6 +194,8 @@ export class Party {
         used: 0,
       })),
       name: pokemon.species,
+      specialAttackStage: 0,
+      specialDefenseStage: 0,
       stats,
       used: index === 0,
     };
