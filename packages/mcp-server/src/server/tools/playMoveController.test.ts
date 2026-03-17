@@ -311,7 +311,7 @@ describe('play_move reasoning requirement', () => {
     strength.statChanges = [
       {
         target: 'opponent',
-        stat: 'accuracy',
+        stat: 'defense',
         stages: -1,
       },
     ];

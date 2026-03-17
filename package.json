@@ -9,6 +9,10 @@
     "start": "bun run --cwd packages/mcp-server start",
     "room-snapshots": "bun run --cwd packages/mcp-server src/cli/roomSnapshots.ts",
     "mcp-player": "bun run --cwd packages/mcp-server src/cli/mcpPlayer.ts",
+    "test": "bun run test:battle-engine && bun run test:mcp-server",
+    "test:battle-engine": "bun run --cwd packages/battle-engine bun test",
+    "test:mcp-server": "bun run --cwd packages/mcp-server bun test",
+    "test:turn": "bun run --cwd packages/battle-engine bun test src/modules/turn/accuracy.test.ts src/modules/turn/critical-hit.test.ts src/modules/turn/paralysis.test.ts src/modules/turn/test/moves/stun-spore.test.ts src/modules/turn/test/moves/body-slam.test.ts",
     "typecheck": "bun run --cwd packages/game-engine typecheck && bun run --cwd packages/battle-engine typecheck && bun run --cwd packages/mcp-server typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
