@@ -34,6 +34,32 @@ export type DomainEvent =
       pokemonName: string;
       targetPokemonName: string;
       moveName: string;
+  }
+  | {
+      type: 'attack.already_affected';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      status: 'paralysis';
+      moveName: string;
+    }
+  | {
+      type: 'attack.paralyzed';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      moveName: string;
+    }
+  | {
+      type: 'pokemon.status_changed';
+      playerId: string;
+      pokemonName: string;
+      status: 'paralysis';
+      active: boolean;
+      sourcePlayerId: string;
+      moveName: string;
     }
   | {
       type: 'damage.applied';

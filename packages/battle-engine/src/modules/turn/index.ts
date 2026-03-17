@@ -170,6 +170,8 @@ const MIN_STAT_STAGE = -6;
 const MAX_STAT_STAGE = 6;
 const MIN_CRITICAL_STAGE = 0;
 const CRITICAL_GUARANTEED_STAGE = 3;
+const PARALYSIS_CHANCE = 0.25;
+const PARALYSIS_SPEED_MODIFIER = 0.75;
 
 const CRITICAL_HIT_CHANCE_BY_STAGE: Record<0 | 1 | 2, number> = {
   0: 1 / 24,
@@ -408,12 +410,14 @@ export class TurnModule implements EngineModule {
   ): [TurnAction, TurnAction] {
     const activePokemonA = this.getActivePokemon(simulatedParties, actionA.playerId);
     const activePokemonB = this.getActivePokemon(simulatedParties, actionB.playerId);
+    const activeSpeedA = this.getSpeedWithStatus(activePokemonA);
+    const activeSpeedB = this.getSpeedWithStatus(activePokemonB);
 
-    if (activePokemonA.stats.speed > activePokemonB.stats.speed) {
+    if (activeSpeedA > activeSpeedB) {
       return [actionA, actionB];
     }
 
-    if (activePokemonB.stats.speed > activePokemonA.stats.speed) {
+    if (activeSpeedB > activeSpeedA) {
       return [actionB, actionA];
     }
 
@@ -468,6 +472,18 @@ export class TurnModule implements EngineModule {
       moveName,
     });
 
+    if (attacker.isParalyzed && context.random() < PARALYSIS_CHANCE) {
+      events.push({
+        type: 'attack.paralyzed',
+        playerId: attackerAction.playerId,
+        targetPlayerId: defenderAction.playerId,
+        pokemonName: attacker.name,
+        targetPokemonName: defender.name,
+        moveName,
+      });
+      return false;
+    }
+
     const attackLanded = this.didAttackLand(
       move.accuracy,
       attacker.accuracyStage,
@@ -509,7 +525,18 @@ export class TurnModule implements EngineModule {
       }
     }
 
+    const statusEffects = move.statusEffects ?? [];
     if (move.power <= 0) {
+      this.applyMoveStatusEffects(
+        attackerAction,
+        defenderAction,
+        simulatedParties,
+        statusEffects,
+        moveName,
+        true,
+        events,
+        context,
+      );
       return false;
     }
 
@@ -568,6 +595,17 @@ export class TurnModule implements EngineModule {
       return true;
     }
 
+    this.applyMoveStatusEffects(
+      attackerAction,
+      defenderAction,
+      simulatedParties,
+      statusEffects,
+      moveName,
+      false,
+      events,
+      context,
+    );
+
     return false;
   }
 
@@ -616,6 +654,79 @@ export class TurnModule implements EngineModule {
     }
 
     return appliedAtLeastOneStage;
+  }
+
+  private applyMoveStatusEffects(
+    attackerAction: TurnAction,
+    defenderAction: TurnAction,
+    simulatedParties: Map<string, PartyEntry[]>,
+    statusEffects: Array<{
+      target: 'self' | 'opponent';
+      status: 'paralysis';
+      chance: number;
+    }>,
+    moveName: string,
+    isStatusOnlyMove: boolean,
+    events: DomainEvent[],
+    context: GameContext,
+  ) {
+    if (statusEffects.length === 0) {
+      return;
+    }
+
+    const attacker = this.getActivePokemon(simulatedParties, attackerAction.playerId);
+    const defender = this.getActivePokemon(simulatedParties, defenderAction.playerId);
+
+    for (const statusEffect of statusEffects) {
+      const isSelfTarget = statusEffect.target === 'self';
+      const targetPokemon = isSelfTarget ? attacker : defender;
+      const targetPlayerId = isSelfTarget
+        ? attackerAction.playerId
+        : defenderAction.playerId;
+      const isAlreadyAffected =
+        statusEffect.status === 'paralysis'
+          ? targetPokemon.isParalyzed
+          : false;
+
+      if (isAlreadyAffected && isStatusOnlyMove) {
+        events.push({
+          type: 'attack.already_affected',
+          playerId: attackerAction.playerId,
+          targetPlayerId,
+          pokemonName: attacker.name,
+          targetPokemonName: targetPokemon.name,
+          status: 'paralysis',
+          moveName,
+        });
+        continue;
+      }
+
+      if (isAlreadyAffected) {
+        continue;
+      }
+
+      if (statusEffect.status === 'paralysis') {
+        const chance = Math.min(1, Math.max(0, statusEffect.chance / 100));
+        if (context.random() >= chance) {
+          continue;
+        }
+
+        events.push({
+          type: 'pokemon.status_changed',
+          playerId: targetPlayerId,
+          pokemonName: targetPokemon.name,
+          status: 'paralysis',
+          active: true,
+          sourcePlayerId: attackerAction.playerId,
+          moveName,
+        });
+      }
+    }
+  }
+
+  private getSpeedWithStatus(pokemon: PartyEntry) {
+    const speedModifier = pokemon.isParalyzed ? PARALYSIS_SPEED_MODIFIER : 1;
+    return pokemon.stats.speed * speedModifier;
   }
 
   private validateAction(

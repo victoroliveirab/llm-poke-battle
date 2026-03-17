@@ -166,6 +166,7 @@ export class Battle {
         evasionStage: entry.evasionStage,
         health: isRevealedPokemon ? entry.health : null,
         isActive: index === 0,
+        isParalyzed: isRevealedPokemon ? entry.isParalyzed : false,
         name: isRevealedPokemon ? entry.name : '???',
         specialAttackStage: entry.specialAttackStage,
         specialDefenseStage: entry.specialDefenseStage,

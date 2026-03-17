@@ -20,6 +20,7 @@ type SnapshotPokemon = {
   maxHp: number;
   moves: SnapshotMove[];
   stages: SnapshotStages;
+  isParalyzed: boolean;
 };
 
 type BoardPlayerSnapshot = {
@@ -92,7 +93,9 @@ type TurnActionTimelineEntrySnapshot =
       attackName: string;
       targetPokemon: string | null;
       damage: number;
-      outcome?: 'hit' | 'miss' | 'not_executed';
+      outcome?: 'hit' | 'miss' | 'not_executed' | 'paralyzed' | 'already_affected' | 'status';
+      status?: 'paralysis' | 'paralyzed';
+      active?: boolean;
       critical: boolean;
       reasoning: string;
     }
@@ -472,6 +475,32 @@ function printTurnActions(actions: TurnActionsSnapshot) {
           );
           continue;
         }
+        if (entry.outcome === 'paralyzed') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> did not execute - fully paralyzed | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
+        if (entry.outcome === 'already_affected') {
+          const isParalysisStatus =
+            entry.status === 'paralysis' || entry.status === 'paralyzed';
+          const statusText = isParalysisStatus ? 'paralyzed' : 'status';
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} was already ${statusText} | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
+        if (entry.outcome === 'status') {
+          const isParalysisStatus =
+            entry.status === 'paralysis' || entry.status === 'paralyzed';
+          const statusText = isParalysisStatus ? 'paralyzed' : 'status changed';
+          const statusAction = entry.active ? 'inflicted' : 'removed';
+          const targetPokemon = entry.targetPokemon ?? 'no target';
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} ${statusText} ${statusAction} | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
         if (entry.outcome === 'not_executed') {
           console.log(
             `${entry.publicName}: attack ${entry.attackName} -> did not execute | reason: ${entry.reasoning}`,
@@ -584,6 +613,11 @@ function printPokemon(
   console.log(
     `${label}: ${pokemon.name} (${pokemon.hp} / ${pokemon.maxHp} HP)`,
   );
+  if (pokemon.isParalyzed) {
+    console.log('Status: paralyzed');
+  } else {
+    console.log('Status: none');
+  }
   if (includeStages) {
     console.log(
       `Stages: acc ${pokemon.stages.accuracy} | atk ${pokemon.stages.attack} | crit ${pokemon.stages.critical} | def ${pokemon.stages.defense} | eva ${pokemon.stages.evasion} | spA ${pokemon.stages.specialAttack} | spD ${pokemon.stages.specialDefense}`,

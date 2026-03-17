@@ -85,6 +85,12 @@ export class PartyModule implements EngineModule {
       return [];
     }
 
+    if (event.type === 'pokemon.status_changed') {
+      const party = this.getPartyObject(event.playerId);
+      party.applyStatus(event.pokemonName, event.status, event.active);
+      return [];
+    }
+
     return [];
   }
 

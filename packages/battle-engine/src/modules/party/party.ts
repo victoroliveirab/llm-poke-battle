@@ -29,6 +29,7 @@ export type PartyEntry = {
   level: number;
   moves: PartyMove[];
   name: string;
+  isParalyzed: boolean;
   specialAttackStage: number;
   specialDefenseStage: number;
   stats: PartyStats;
@@ -143,6 +144,18 @@ export class Party {
     const nextStage = this.clampStage(currentStage + Math.trunc(delta), stat);
     this.setStageValue(pokemon, stat, nextStage);
     return nextStage;
+  }
+
+  applyStatus(pokemonName: string, status: 'paralysis', active: boolean) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    if (status === 'paralysis') {
+      pokemon.isParalyzed = active;
+      return;
+    }
   }
 
   resetBattleStages(pokemonName: string) {
@@ -295,6 +308,7 @@ export class Party {
         used: 0,
       })),
       name: pokemon.species,
+      isParalyzed: false,
       specialAttackStage: 0,
       specialDefenseStage: 0,
       stats,

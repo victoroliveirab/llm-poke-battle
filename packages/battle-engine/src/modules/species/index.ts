@@ -12,6 +12,15 @@ const catalogOptionMoveSchema = z.object({
   pp: z.number(),
   type: pokemonTypeEnum,
   class: z.enum(['physical', 'special']),
+  statusEffects: z
+    .array(
+      z.object({
+        target: z.enum(['self', 'opponent']),
+        status: z.enum(['paralysis']),
+        chance: z.number(),
+      }),
+    )
+    .optional(),
   statChanges: z
     .array(
       z.object({

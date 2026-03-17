@@ -27,6 +27,7 @@ export type SnapshotPokemon = {
   maxHp: number;
   moves: SnapshotMove[];
   stages: SnapshotStages;
+  isParalyzed: boolean;
 };
 
 export type BoardPlayerSnapshot = {
@@ -115,7 +116,9 @@ export type TurnActionTimelineEntrySnapshot =
       attackName: string;
       targetPokemon: string | null;
       damage: number;
-      outcome: 'hit' | 'miss' | 'not_executed';
+      outcome: 'hit' | 'miss' | 'not_executed' | 'paralyzed' | 'already_affected' | 'status';
+      status?: 'paralysis' | 'paralyzed';
+      active?: boolean;
       critical: boolean;
       reasoning: string;
     }
@@ -529,6 +532,7 @@ type FullPartyEntry = {
   evasionStage: number;
   specialAttackStage: number;
   specialDefenseStage: number;
+  isParalyzed: boolean;
   stats: {
     hp: number;
   };
@@ -579,6 +583,7 @@ function buildSnapshotPokemon(entry: FullPartyEntry): SnapshotPokemon {
       specialAttack: entry.specialAttackStage,
       specialDefense: entry.specialDefenseStage,
     },
+    isParalyzed: entry.isParalyzed,
   };
 }
 
@@ -736,6 +741,111 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: 0,
           outcome: 'miss',
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.already_affected') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: 0,
+        executed: false,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: 0,
+          outcome: 'already_affected',
+          status: event.status,
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.paralyzed') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: 0,
+        executed: false,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: 0,
+          outcome: 'paralyzed',
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'pokemon.status_changed') {
+      const submittedAction = submittedActions.get(event.sourcePlayerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.sourcePlayerId);
+      attackOutcomeByPlayer.set(event.sourcePlayerId, {
+        attackName,
+        targetPokemon: event.pokemonName,
+        damage: 0,
+        executed: true,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.sourcePlayerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.pokemonName,
+          damage: 0,
+          outcome: 'status',
+          status: event.status,
+          active: event.active,
           critical: false,
           reasoning,
         });
@@ -935,6 +1045,7 @@ function cloneSnapshotPokemon(snapshot: SnapshotPokemon): SnapshotPokemon {
       specialAttack: snapshot.stages.specialAttack,
       specialDefense: snapshot.stages.specialDefense,
     },
+    isParalyzed: snapshot.isParalyzed,
   };
 }
 
@@ -1036,6 +1147,8 @@ function cloneTurnActionTimelineEntries(
         targetPokemon: entry.targetPokemon,
         damage: entry.damage,
         outcome: entry.outcome,
+        status: entry.status,
+        active: entry.active,
         critical: entry.critical,
         reasoning: entry.reasoning,
       };

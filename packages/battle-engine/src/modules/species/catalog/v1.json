@@ -124,12 +124,19 @@
           "class": "special"
         },
         {
-          "name": "Fire Blast",
-          "power": 110,
-          "accuracy": 85,
-          "pp": 5,
-          "type": "fire",
-          "class": "special"
+          "name": "Body Slam",
+          "power": 85,
+          "accuracy": 100,
+          "pp": 15,
+          "type": "normal",
+          "class": "physical",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "status": "paralysis",
+              "chance": 30
+            }
+          ]
         },
         {
           "name": "Horn Attack",
@@ -226,12 +233,19 @@
           "class": "special"
         },
         {
-          "name": "Power Whip",
-          "power": 120,
-          "accuracy": 85,
+          "name": "Stun Spore",
+          "power": 0,
+          "accuracy": 75,
           "pp": 10,
           "type": "grass",
-          "class": "physical"
+          "class": "physical",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "status": "paralysis",
+              "chance": 100
+            }
+          ]
         }
       ]
     },

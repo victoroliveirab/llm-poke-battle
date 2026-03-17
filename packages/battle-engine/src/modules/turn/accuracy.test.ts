@@ -30,6 +30,16 @@ function selectFearowParties(game: Battle) {
   game.selectParty(PLAYER_TWO_ID, ['Nidoking', 'Raichu', 'Charizard']);
 }
 
+function selectNidokingParties(game: Battle) {
+  game.selectParty(PLAYER_ONE_ID, ['Nidoking', 'Charizard', 'Raichu']);
+  game.selectParty(PLAYER_TWO_ID, ['Exeggutor', 'Charizard', 'Raichu']);
+}
+
+function selectCharizardParties(game: Battle) {
+  game.selectParty(PLAYER_ONE_ID, ['Charizard', 'Nidoking', 'Raichu']);
+  game.selectParty(PLAYER_TWO_ID, ['Nidoking', 'Exeggutor', 'Raichu']);
+}
+
 function resolveAttackTurn(game: Battle, playerOneMove: string, playerTwoMove: string) {
   game.selectAction({
     playerID: PLAYER_ONE_ID,
@@ -107,6 +117,78 @@ function setActivePokemonStages(
   if (typeof stages.specialDefenseStage === 'number') {
     activePokemon.specialDefenseStage = stages.specialDefenseStage;
   }
+}
+
+function setActivePokemonParalysis(
+  game: Battle,
+  playerId: string,
+  isParalyzed: boolean,
+) {
+  const partyModule = (game as unknown as {
+    partyModule: {
+      parties: Map<
+        string,
+        {
+          active: () => {
+            isParalyzed: boolean;
+          };
+        }
+      >;
+    };
+  }).partyModule;
+
+  const party = partyModule.parties.get(playerId);
+  if (!party) {
+    throw new Error(`Party for player '${playerId}' not found in test setup.`);
+  }
+
+  const activePokemon = party.active();
+  activePokemon.isParalyzed = isParalyzed;
+}
+
+function setActivePokemonHealth(game: Battle, playerId: string, health: number) {
+  const partyModule = (game as unknown as {
+    partyModule: {
+      parties: Map<
+        string,
+        {
+          active: () => {
+            health: number;
+          };
+        }
+      >;
+    };
+  }).partyModule;
+
+  const party = partyModule.parties.get(playerId);
+  if (!party) {
+    throw new Error(`Party for player '${playerId}' not found in test setup.`);
+  }
+
+  const activePokemon = party.active();
+  activePokemon.health = health;
+}
+
+function isActivePokemonParalyzed(game: Battle, playerId: string) {
+  const partyModule = (game as unknown as {
+    partyModule: {
+      parties: Map<
+        string,
+        {
+          active: () => {
+            isParalyzed: boolean;
+          };
+        }
+      >;
+    };
+  }).partyModule;
+
+  const party = partyModule.parties.get(playerId);
+  if (!party) {
+    throw new Error(`Party for player '${playerId}' not found in test setup.`);
+  }
+
+  return party.active().isParalyzed;
 }
 
 function getDamageAppliedEvent(
@@ -597,5 +679,246 @@ describe('turn accuracy resolution', () => {
     expect(benchedCharizard.evasionStage).toBe(0);
     expect(benchedCharizard.specialAttackStage).toBe(0);
     expect(benchedCharizard.specialDefenseStage).toBe(0);
+  });
+
+  it('paralyzes the foe when Stun Spore lands', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Nidoking move lands
+      0.1, // Exeggutor Stun Spore lands
+      0.1, // Stun Spore status check succeeds
+      0.99, // Exeggutor should miss if it runs at all
+    ]);
+    selectNidokingParties(game);
+
+    const speciesModule = (game as unknown as {
+      speciesModule: {
+        bySpecies: Map<string, { moves: Array<{ name: string; accuracy: number }> }>;
+      };
+    }).speciesModule;
+    const exeggutor = speciesModule.bySpecies.get('Exeggutor');
+    const psychic = exeggutor?.moves.find((move) => move.name === 'Psychic');
+    if (!psychic) {
+      throw new Error('Expected Exeggutor Psychic move in species catalog.');
+    }
+    psychic.accuracy = 0;
+
+    const events = resolveAttackTurn(game, 'Earthquake', 'Stun Spore');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.pokemonName === 'Exeggutor' &&
+          event.status === 'paralysis' &&
+          event.moveName === 'Stun Spore' &&
+          event.active === true,
+      ),
+    ).toBe(true);
+    expect(isActivePokemonParalyzed(game, PLAYER_TWO_ID)).toBe(true);
+  });
+
+  it('paralyzes the foe when Body Slam lands', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Body Slam lands
+      0.2, // Body Slam paralysis check succeeds
+      0.99, // Exeggutor Psychic misses if it runs at all
+    ]);
+    selectNidokingParties(game);
+
+    const speciesModule = (game as unknown as {
+      speciesModule: {
+        bySpecies: Map<string, { moves: Array<{ name: string; accuracy: number }> }>;
+      };
+    }).speciesModule;
+    const exeggutor = speciesModule.bySpecies.get('Exeggutor');
+    const psychic = exeggutor?.moves.find((move) => move.name === 'Psychic');
+    if (!psychic) {
+      throw new Error('Expected Exeggutor Psychic move in species catalog.');
+    }
+    psychic.accuracy = 0;
+
+    const events = resolveAttackTurn(game, 'Body Slam', 'Psychic');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.pokemonName === 'Exeggutor' &&
+          event.status === 'paralysis' &&
+          event.moveName === 'Body Slam' &&
+          event.active === true,
+      ),
+    ).toBe(true);
+  });
+
+  it('does not reapply status when Stun Spore lands on an already-paralyzed target', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Nidoking Earthquake lands
+      0.5, // Nidoking crit check
+      0.9, // Nidoking damage random factor
+      0.2, // Exeggutor Stun Spore lands
+    ]);
+    selectNidokingParties(game);
+    setActivePokemonParalysis(game, PLAYER_ONE_ID, true);
+
+    const events = resolveAttackTurn(game, 'Earthquake', 'Stun Spore');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.already_affected' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.targetPokemonName === 'Nidoking' &&
+          event.status === 'paralysis' &&
+          event.moveName === 'Stun Spore',
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.status_changed' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.pokemonName === 'Nidoking',
+      ),
+    ).toBe(false);
+  });
+
+  it('still applies Body Slam damage when the target is already paralyzed and skips status roll', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Body Slam lands
+      0.2, // Body Slam crit check
+      0.9, // Body Slam damage random factor
+      0.99, // Exeggutor Psychic misses if it runs at all
+    ]);
+    selectNidokingParties(game);
+    setActivePokemonParalysis(game, PLAYER_TWO_ID, true);
+
+    const speciesModule = (game as unknown as {
+      speciesModule: {
+        bySpecies: Map<string, { moves: Array<{ name: string; accuracy: number }> }>;
+      };
+    }).speciesModule;
+    const exeggutor = speciesModule.bySpecies.get('Exeggutor');
+    const psychic = exeggutor?.moves.find((move) => move.name === 'Psychic');
+    if (!psychic) {
+      throw new Error('Expected Exeggutor Psychic move in species catalog.');
+    }
+    psychic.accuracy = 0;
+
+    const events = resolveAttackTurn(game, 'Body Slam', 'Psychic');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID &&
+          event.moveName === 'Body Slam',
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.pokemonName === 'Exeggutor' &&
+          event.status === 'paralysis' &&
+          event.moveName === 'Body Slam',
+      ),
+    ).toBe(false);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.already_affected' &&
+          event.playerId === PLAYER_ONE_ID,
+      ),
+    ).toBe(false);
+  });
+
+  it('does not execute a move from a paralyzed Pokemon when fully paralyzed', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Nidoking move misses due status check
+      0.99, // Exeggutor should run and miss if it runs at all
+    ]);
+    selectNidokingParties(game);
+    setActivePokemonParalysis(game, PLAYER_ONE_ID, true);
+
+    const speciesModule = (game as unknown as {
+      speciesModule: {
+        bySpecies: Map<string, { moves: Array<{ name: string; accuracy: number }> }>;
+      };
+    }).speciesModule;
+    const exeggutor = speciesModule.bySpecies.get('Exeggutor');
+    const psychic = exeggutor?.moves.find((move) => move.name === 'Psychic');
+    if (!psychic) {
+      throw new Error('Expected Exeggutor Psychic move in species catalog.');
+    }
+    psychic.accuracy = 0;
+
+    const events = resolveAttackTurn(game, 'Earthquake', 'Psychic');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.paralyzed' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.moveName === 'Earthquake' &&
+          event.targetPokemonName === 'Exeggutor',
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+      ),
+    ).toBe(false);
+  });
+
+  it('does not apply paralysis when the target faints', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Body Slam lands
+      0.1, // Body Slam paralysis check would succeed
+    ]);
+    selectNidokingParties(game);
+    setActivePokemonHealth(game, PLAYER_TWO_ID, 1);
+
+    const events = resolveAttackTurn(game, 'Body Slam', 'Psychic');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.fainted' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.pokemonName === 'Exeggutor',
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.pokemonName === 'Exeggutor',
+      ),
+    ).toBe(false);
+  });
+
+  it('uses reduced speed for paralyzed Pokemon when resolving turn order', () => {
+    const game = buildBattleWithRandomSequence([
+      0.1, // Nidoking hit check
+      0.5, // Nidoking crit check
+      0.9, // Nidoking damage variation
+      0.1, // Charizard hit check
+      0.5, // Charizard crit check
+      0.9, // Charizard damage variation
+    ]);
+    selectCharizardParties(game);
+    setActivePokemonParalysis(game, PLAYER_ONE_ID, true);
+
+    const events = resolveAttackTurn(game, 'Fire Punch', 'Sludge Bomb');
+    const nidokingActionIndex = events.findIndex(
+      (event) => event.type === 'move.consumed' && event.playerId === PLAYER_TWO_ID,
+    );
+    const charizardActionIndex = events.findIndex(
+      (event) => event.type === 'move.consumed' && event.playerId === PLAYER_ONE_ID,
+    );
+
+    expect(nidokingActionIndex).toBeGreaterThan(-1);
+    expect(charizardActionIndex).toBeGreaterThan(-1);
+    expect(nidokingActionIndex).toBeLessThan(charizardActionIndex);
   });
 });
