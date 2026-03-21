@@ -151,6 +151,38 @@ describe('turn attack resolution', () => {
     expect(boostedDefenseDamage).toBeLessThan(baselineDamage);
   });
 
+  it('emits final hook-adjusted damage and applies that same amount to HP', () => {
+    const baselineFixture = createMoveFixture({
+      randomSequence: [0, 0.9, 0],
+    });
+    const baselineDamage = getDamageAppliedEvent(
+      baselineFixture.execute('Strength', 'Sludge Bomb').events,
+      PLAYER_ONE_ID,
+    ).damage;
+
+    const modifiedFixture = createMoveFixture({
+      randomSequence: [0, 0.9, 0],
+      statusHandlerRegistry: {
+        burn: {
+          modifyDamage(ctx) {
+            return { damage: Math.floor(ctx.damage / 2) };
+          },
+        },
+      } satisfies StatusHandlerRegistry,
+    });
+    modifiedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'burn';
+    const defender = modifiedFixture.getActivePokemon('player-two');
+    const initialHealth = defender.health;
+
+    const adjustedDamage = getDamageAppliedEvent(
+      modifiedFixture.execute('Strength', 'Sludge Bomb').events,
+      PLAYER_ONE_ID,
+    ).damage;
+
+    expect(adjustedDamage).toBe(Math.floor(baselineDamage / 2));
+    expect(defender.health).toBe(initialHealth - adjustedDamage);
+  });
+
   it('applies special attack and special defense stages to damage calculation', () => {
     const baselineFixture = createMoveFixture({
       randomSequence: [

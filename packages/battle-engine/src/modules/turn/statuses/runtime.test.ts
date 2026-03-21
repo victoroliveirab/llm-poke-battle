@@ -163,6 +163,38 @@ describe('status runtime', () => {
     ).toBe(10);
   });
 
+  it('applies multiple modifyDamage hooks in deterministic major-then-volatile order', () => {
+    const context = createMoveStatusContext();
+    context.attacker.majorStatus = 'burn';
+    context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
+    const calls: string[] = [];
+
+    const registry = {
+      burn: {
+        modifyDamage(ctx) {
+          calls.push(`burn:${ctx.damage}`);
+          return { damage: Math.floor(ctx.damage / 2) };
+        },
+      },
+      confusion: {
+        modifyDamage(ctx) {
+          calls.push(`confusion:${ctx.damage}`);
+          return { damage: ctx.damage - 3 };
+        },
+      },
+    } satisfies StatusHandlerRegistry;
+
+    expect(
+      runModifyDamageHooks({
+        context,
+        damage: 21,
+        pokemon: context.attacker,
+        registry,
+      }).damage,
+    ).toBe(7);
+    expect(calls).toEqual(['burn:21', 'confusion:10']);
+  });
+
   it('runs afterMove and endTurn hooks in deterministic major-then-volatile order', () => {
     const moveContext = createMoveStatusContext();
     const statusContext = createStatusContext();
