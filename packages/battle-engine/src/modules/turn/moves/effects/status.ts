@@ -39,6 +39,7 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
     return;
   }
 
+  targetPokemon.majorStatus = params.effect.status;
   params.context.events.push({
     type: 'pokemon.major_status_changed',
     playerId: targetPlayerId,

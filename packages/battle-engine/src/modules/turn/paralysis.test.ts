@@ -69,6 +69,36 @@ describe('turn paralysis status effect', () => {
     ).toBe(false);
   });
 
+  it('can block a pokemon that was paralyzed earlier in the same turn', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // Player 1 Body Slam accuracy check
+        0.9, // Player 1 Body Slam crit check (fails)
+        0.5, // Player 1 Body Slam damage random factor
+        0.2, // Player 1 Body Slam paralysis chance
+        0.1, // Player 2 paralysis check (fully paralyzed)
+      ],
+    });
+
+    const events = fixture.resolveAttackTurn('Body Slam', 'Sludge Bomb').events;
+
+    expect(fixture.getActivePokemon(PLAYER_TWO_ID).majorStatus).toBe('paralysis');
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.paralyzed' && event.playerId === PLAYER_TWO_ID,
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_TWO_ID,
+      ),
+    ).toBe(false);
+  });
+
   it('reduces speed enough to reverse action order when speed is tied before status', () => {
     const noParalysisFixture = createTurnStateFixture({
       playerOneParty: ['Charizard', 'Raichu', 'Nidoking'],

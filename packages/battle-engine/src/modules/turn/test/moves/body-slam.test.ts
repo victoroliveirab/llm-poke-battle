@@ -31,6 +31,7 @@ describe('move: Body Slam', () => {
           event.active === true,
       ),
     ).toBe(true);
+    expect(fixture.getActivePokemon('player-two').majorStatus).toBe('paralysis');
   });
 
   it('does not apply paralysis when Body Slam knocks out the target', () => {
