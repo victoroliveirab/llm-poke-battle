@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
+import { getActivePokemon } from './party-state';
 import { createTurnStateFixture } from './test/builders/turn-state-fixture';
 import { PLAYER_ONE_ID, PLAYER_TWO_ID } from './test/builders/shared';
+import { StatusHandlerRegistry } from './statuses/types';
 
 describe('turn resolver', () => {
   it('skips the second attack when the first attacker knocks out the defender', () => {
@@ -89,5 +91,42 @@ describe('turn resolver', () => {
           event.pokemonName === 'Nidoking',
       ),
     ).toBe(true);
+  });
+
+  it('runs endTurn hooks before determining the winner', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // Body Slam accuracy
+        0.9, // crit check (fails)
+        0.5, // damage random factor
+        0, // Sludge Bomb accuracy
+        0.9, // crit check (fails)
+        0.5, // damage random factor
+      ],
+      statusHandlerRegistry: {
+        burn: {
+          endTurn(ctx) {
+            getActivePokemon(ctx.simulatedParties, ctx.playerId).health = 0;
+          },
+        },
+      } satisfies StatusHandlerRegistry,
+    });
+    const playerTwoParty = fixture.simulatedParties.get(PLAYER_TWO_ID);
+    if (!playerTwoParty) {
+      throw new Error('Expected player two party in resolver fixture.');
+    }
+    playerTwoParty[0].majorStatus = 'burn';
+    playerTwoParty[0].health = 999;
+    for (const benchedPokemon of playerTwoParty.slice(1)) {
+      benchedPokemon.health = 0;
+    }
+
+    const result = fixture.resolveAttackTurn('Body Slam', 'Sludge Bomb');
+
+    expect(result.winner).toBe(PLAYER_ONE_ID);
+    expect(result.pendingReplacementPlayers).toEqual([]);
+    expect(fixture.getActivePokemon(PLAYER_TWO_ID).health).toBe(0);
   });
 });

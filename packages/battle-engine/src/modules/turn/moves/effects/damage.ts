@@ -47,7 +47,7 @@ export function applyDamageEffect(context: MoveExecutionContext) {
     context,
     damage: baseDamage,
     pokemon: context.attacker,
-    registry: defaultStatusHandlerRegistry,
+    registry: context.statusHandlerRegistry ?? defaultStatusHandlerRegistry,
   });
 
   context.defender.health = Math.max(0, context.defender.health - damage);

@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 import { getActivePokemon } from '../party-state';
 import { buildPartyEntries, PLAYER_ONE_ID, PLAYER_TWO_ID } from '../test/builders/shared';
-import { getStatusHandlers, runBeforeMoveHooks, runModifyDamageHooks } from './runtime';
-import { MoveStatusContext, StatusHandlerRegistry } from './types';
+import {
+  getStatusHandlers,
+  runAfterMoveHooks,
+  runBeforeMoveHooks,
+  runEndTurnHooks,
+  runModifyDamageHooks,
+} from './runtime';
+import { MoveStatusContext, StatusContext, StatusHandlerRegistry } from './types';
 
 function createMoveStatusContext(): MoveStatusContext {
   const simulatedParties = new Map([
@@ -28,6 +34,21 @@ function createMoveStatusContext(): MoveStatusContext {
       power: 80,
       type: 'normal',
     },
+  };
+}
+
+function createStatusContext(): StatusContext {
+  const simulatedParties = new Map([
+    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
+    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
+  ]);
+
+  return {
+    simulatedParties,
+    playerId: PLAYER_ONE_ID,
+    opponentPlayerId: PLAYER_TWO_ID,
+    random: () => 0,
+    events: [],
   };
 }
 
@@ -140,5 +161,53 @@ describe('status runtime', () => {
         registry,
       }).damage,
     ).toBe(10);
+  });
+
+  it('runs afterMove and endTurn hooks in deterministic major-then-volatile order', () => {
+    const moveContext = createMoveStatusContext();
+    const statusContext = createStatusContext();
+    moveContext.attacker.majorStatus = 'burn';
+    moveContext.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
+    const statusPokemon = getActivePokemon(statusContext.simulatedParties, PLAYER_ONE_ID);
+    statusPokemon.majorStatus = 'burn';
+    statusPokemon.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
+    const calls: string[] = [];
+
+    const registry = {
+      burn: {
+        afterMove() {
+          calls.push('after:burn');
+        },
+        endTurn() {
+          calls.push('end:burn');
+        },
+      },
+      confusion: {
+        afterMove() {
+          calls.push('after:confusion');
+        },
+        endTurn() {
+          calls.push('end:confusion');
+        },
+      },
+    } satisfies StatusHandlerRegistry;
+
+    runAfterMoveHooks({
+      context: moveContext,
+      pokemon: moveContext.attacker,
+      registry,
+    });
+    runEndTurnHooks({
+      context: statusContext,
+      pokemon: statusPokemon,
+      registry,
+    });
+
+    expect(calls).toEqual([
+      'after:burn',
+      'after:confusion',
+      'end:burn',
+      'end:confusion',
+    ]);
   });
 });

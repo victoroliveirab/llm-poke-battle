@@ -9,6 +9,9 @@ import {
 import { PokemonSpecies } from '../species';
 import { executeMove } from './moves/executor';
 import { TurnAction } from './types';
+import { defaultStatusHandlerRegistry } from './statuses/registry';
+import { runEndTurnHooks } from './statuses/runtime';
+import { StatusContext, StatusHandlerRegistry } from './statuses/types';
 
 type ResolveTurnParams = {
   playerIds: [string, string];
@@ -16,6 +19,7 @@ type ResolveTurnParams = {
   simulatedParties: Map<string, PartyEntry[]>;
   getSpecies: (speciesName: string) => PokemonSpecies;
   random: () => number;
+  statusHandlerRegistry?: StatusHandlerRegistry;
 };
 
 type ResolveTurnResult = {
@@ -73,6 +77,30 @@ export function resolveTurn(params: ResolveTurnParams): ResolveTurnResult {
       events,
     );
   }
+
+  const createStatusContext = (
+    playerId: string,
+    opponentPlayerId: string,
+  ): StatusContext => ({
+    simulatedParties,
+    playerId,
+    opponentPlayerId,
+    random: params.random,
+    events,
+  });
+  const statusHandlerRegistry =
+    params.statusHandlerRegistry ?? defaultStatusHandlerRegistry;
+
+  runEndTurnHooks({
+    context: createStatusContext(playerA, playerB),
+    pokemon: getActivePokemon(simulatedParties, playerA),
+    registry: statusHandlerRegistry,
+  });
+  runEndTurnHooks({
+    context: createStatusContext(playerB, playerA),
+    pokemon: getActivePokemon(simulatedParties, playerB),
+    registry: statusHandlerRegistry,
+  });
 
   const winner = getWinner(simulatedParties, playerA, playerB);
   if (winner) {
@@ -147,7 +175,7 @@ function performAttackIfPossible(
   attackerAction: TurnAction,
   defenderAction: TurnAction,
   simulatedParties: Map<string, PartyEntry[]>,
-  params: Pick<ResolveTurnParams, 'getSpecies' | 'random'>,
+  params: Pick<ResolveTurnParams, 'getSpecies' | 'random' | 'statusHandlerRegistry'>,
   events: DomainEvent[],
 ) {
   return executeMove({
@@ -157,5 +185,6 @@ function performAttackIfPossible(
     getSpecies: params.getSpecies,
     random: params.random,
     simulatedParties,
+    statusHandlerRegistry: params.statusHandlerRegistry,
   }).defenderFainted;
 }

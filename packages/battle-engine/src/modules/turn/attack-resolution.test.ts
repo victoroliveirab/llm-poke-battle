@@ -4,6 +4,7 @@ import {
   getDamageAppliedEvent,
   PLAYER_ONE_ID,
 } from './test/builders/shared';
+import { StatusHandlerRegistry } from './statuses/types';
 
 describe('turn attack resolution', () => {
   it('consumes PP and emits attack.missed without applying damage on miss', () => {
@@ -187,5 +188,50 @@ describe('turn attack resolution', () => {
 
     expect(boostedSpecialAttackDamage).toBeGreaterThan(baselineDamage);
     expect(boostedSpecialDefenseDamage).toBeLessThan(baselineDamage);
+  });
+
+  it('runs afterMove hooks after a move resolves, including misses', () => {
+    let afterMoveCalls = 0;
+    const fixture = createMoveFixture({
+      randomSequence: [
+        0.95, // Rock Slide miss check
+      ],
+      statusHandlerRegistry: {
+        burn: {
+          afterMove() {
+            afterMoveCalls += 1;
+          },
+        },
+      } satisfies StatusHandlerRegistry,
+    });
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'burn';
+
+    fixture.execute('Rock Slide', 'Sludge Bomb');
+
+    expect(afterMoveCalls).toBe(1);
+  });
+
+  it('does not run afterMove hooks when beforeMove blocks the action', () => {
+    let afterMoveCalls = 0;
+    const fixture = createMoveFixture({
+      randomSequence: [
+        0, // paralysis block check
+      ],
+      statusHandlerRegistry: {
+        paralysis: {
+          beforeMove() {
+            return { canAct: false };
+          },
+          afterMove() {
+            afterMoveCalls += 1;
+          },
+        },
+      } satisfies StatusHandlerRegistry,
+    });
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'paralysis';
+
+    fixture.execute('Rock Slide', 'Sludge Bomb');
+
+    expect(afterMoveCalls).toBe(0);
   });
 });

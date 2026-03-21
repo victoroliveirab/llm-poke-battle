@@ -2,7 +2,7 @@ import { PartyEntry } from '../../party/party';
 import { PokemonSpecies, PokemonType } from '../../species';
 import { StageStat, TurnAction } from '../types';
 import { MajorStatusKind } from '../status-state';
-import { MoveStatusContext } from '../statuses/types';
+import { MoveStatusContext, StatusHandlerRegistry } from '../statuses/types';
 
 export type MoveEffect =
   | {
@@ -35,4 +35,5 @@ export type MoveExecutionContext = MoveStatusContext & {
   attackerSpecies: PokemonSpecies;
   defenderAction: TurnAction;
   defenderSpecies: PokemonSpecies;
+  statusHandlerRegistry?: StatusHandlerRegistry;
 };

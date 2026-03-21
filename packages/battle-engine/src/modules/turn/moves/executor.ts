@@ -11,7 +11,8 @@ import { applyStageEffect } from './effects/stage';
 import { applyStatusEffect } from './effects/status';
 import { MoveDefinition } from './types';
 import { defaultStatusHandlerRegistry } from '../statuses/registry';
-import { runBeforeMoveHooks } from '../statuses/runtime';
+import { runAfterMoveHooks, runBeforeMoveHooks } from '../statuses/runtime';
+import { StatusHandlerRegistry } from '../statuses/types';
 
 type ExecuteMoveParams = {
   attackerAction: TurnAction;
@@ -20,6 +21,7 @@ type ExecuteMoveParams = {
   getSpecies: (speciesName: string) => PokemonSpecies;
   random: () => number;
   simulatedParties: Map<string, PartyEntry[]>;
+  statusHandlerRegistry?: StatusHandlerRegistry;
 };
 
 export function executeMove(params: ExecuteMoveParams) {
@@ -62,6 +64,8 @@ export function executeMove(params: ExecuteMoveParams) {
   }
 
   const move = fromSpeciesMove(speciesMove);
+  const statusHandlerRegistry =
+    params.statusHandlerRegistry ?? defaultStatusHandlerRegistry;
   const statusContext = {
     simulatedParties: params.simulatedParties,
     playerId: params.attackerAction.playerId,
@@ -72,6 +76,12 @@ export function executeMove(params: ExecuteMoveParams) {
     defender,
     move,
   };
+  const runAfterMove = () =>
+    runAfterMoveHooks({
+      context: statusContext,
+      pokemon: attacker,
+      registry: statusHandlerRegistry,
+    });
 
   moveState.used += 1;
   moveState.remaining = Math.max(0, moveState.remaining - 1);
@@ -86,7 +96,7 @@ export function executeMove(params: ExecuteMoveParams) {
     !runBeforeMoveHooks({
       context: statusContext,
       pokemon: attacker,
-      registry: defaultStatusHandlerRegistry,
+      registry: statusHandlerRegistry,
     }).canAct
   ) {
     return { defenderFainted: false };
@@ -108,6 +118,7 @@ export function executeMove(params: ExecuteMoveParams) {
       defender,
       move.name,
     );
+    runAfterMove();
     return { defenderFainted: false };
   }
 
@@ -140,6 +151,7 @@ export function executeMove(params: ExecuteMoveParams) {
         defender,
         move.name,
       );
+      runAfterMove();
       return { defenderFainted: false };
     }
 
@@ -157,8 +169,10 @@ export function executeMove(params: ExecuteMoveParams) {
         playerId: params.attackerAction.playerId,
         random: params.random,
         simulatedParties: params.simulatedParties,
+        statusHandlerRegistry,
       });
       if (damageResult.defenderFainted) {
+        runAfterMove();
         return damageResult;
       }
       continue;
@@ -193,9 +207,11 @@ export function executeMove(params: ExecuteMoveParams) {
       defender,
       move.name,
     );
+    runAfterMove();
     return { defenderFainted: false };
   }
 
+  runAfterMove();
   return { defenderFainted: false };
 }
 

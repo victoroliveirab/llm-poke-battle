@@ -1,6 +1,7 @@
 import { getActivePokemon } from '../../party-state';
 import { resolveTurn } from '../../resolve-turn';
 import { StageStat, TurnAction } from '../../types';
+import { StatusHandlerRegistry } from '../../statuses/types';
 import {
   buildAttackAction,
   buildPartyEntries,
@@ -15,6 +16,7 @@ type TurnStateFixtureParams = {
   playerOneParty?: string[];
   playerTwoParty?: string[];
   randomSequence?: number[];
+  statusHandlerRegistry?: StatusHandlerRegistry;
 };
 
 type StageOverrides = Partial<Record<StageStat, number>>;
@@ -92,6 +94,7 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
       simulatedParties,
       getSpecies,
       random,
+      statusHandlerRegistry: params.statusHandlerRegistry,
     });
   }
 

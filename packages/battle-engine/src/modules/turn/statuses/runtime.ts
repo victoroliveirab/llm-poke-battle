@@ -26,6 +26,7 @@ export function getStatusHandlers(
 ): StatusHandlerRegistration[] {
   const registrations: StatusHandlerRegistration[] = [];
 
+  // Major statuses always run before volatile ones so hook order stays deterministic.
   if (pokemon.majorStatus !== null) {
     const majorHandler = registry[pokemon.majorStatus];
     if (majorHandler) {
@@ -89,6 +90,7 @@ export function runAfterMoveHooks(params: RuntimeParams<MoveStatusContext>) {
   }
 }
 
+// End-turn hooks run after move hooks and before winner evaluation.
 export function runEndTurnHooks(params: RuntimeParams<StatusContext>) {
   for (const { handler } of getStatusHandlers(params.pokemon, params.registry)) {
     handler.endTurn?.(params.context);

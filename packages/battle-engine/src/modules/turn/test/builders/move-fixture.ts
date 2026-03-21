@@ -19,6 +19,7 @@ export function createMoveFixture(params: MoveFixtureParams = {}) {
         getSpecies: fixture.getSpecies,
         random: fixture.random,
         simulatedParties: fixture.simulatedParties,
+        statusHandlerRegistry: params.statusHandlerRegistry,
       });
 
       return { events, result };
