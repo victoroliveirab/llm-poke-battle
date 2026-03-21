@@ -1,13 +1,15 @@
-import { MoveExecutionContext, MoveEffect } from '../types';
 import {
+  AppliedMoveStatus,
+  MoveExecutionContext,
+  MoveEffect,
+} from '../types';
+import {
+  createVolatileStatus,
   hasMajorStatus,
   hasVolatileStatus,
-  isMajorStatusKind,
 } from '../../status-state';
 
 type StatusEffect = Extract<MoveEffect, { kind: 'apply-status' }>;
-const CONFUSION_MIN_DURATION = 1;
-const CONFUSION_MAX_DURATION = 4;
 
 type ApplyStatusEffectParams = {
   effect: StatusEffect;
@@ -21,9 +23,11 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
   const targetPlayerId = isSelfTarget
     ? params.context.attackerAction.playerId
     : params.context.defenderAction.playerId;
-  const isAlreadyAffected = isMajorStatusKind(params.effect.status)
-    ? hasMajorStatus(targetPokemon, params.effect.status)
-    : hasVolatileStatus(targetPokemon, params.effect.status);
+  const appliedStatusKind = getAppliedStatusKind(params.effect.status);
+  const isAlreadyAffected =
+    params.effect.status.kind === 'major-status'
+      ? hasMajorStatus(targetPokemon, params.effect.status.status)
+      : hasVolatileStatus(targetPokemon, params.effect.status.status);
 
   if (isAlreadyAffected && params.isStatusOnlyMove) {
     params.context.events.push({
@@ -32,7 +36,7 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
       targetPlayerId,
       pokemonName: params.context.attacker.name,
       targetPokemonName: targetPokemon.name,
-      status: params.effect.status,
+      status: appliedStatusKind,
       moveName: params.context.move.name,
     });
     return;
@@ -47,13 +51,13 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
     return;
   }
 
-  if (isMajorStatusKind(params.effect.status)) {
-    targetPokemon.majorStatus = params.effect.status;
+  if (params.effect.status.kind === 'major-status') {
+    targetPokemon.majorStatus = params.effect.status.status;
     params.context.events.push({
       type: 'pokemon.major_status_changed',
       playerId: targetPlayerId,
       pokemonName: targetPokemon.name,
-      status: params.effect.status,
+      status: params.effect.status.status,
       active: true,
       sourcePlayerId: params.context.attackerAction.playerId,
       moveName: params.context.move.name,
@@ -61,28 +65,29 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
     return;
   }
 
-  const confusionDuration = sampleConfusionDuration(params.context.random);
-  targetPokemon.volatileStatuses.push({
-    kind: 'confusion',
-    turnsRemaining: confusionDuration,
-  });
+  const appliedStatus = resolveVolatileStatus(
+    params.effect.status.status,
+    params.context.random,
+  );
+  targetPokemon.volatileStatuses.push(appliedStatus);
   params.context.events.push({
     type: 'pokemon.volatile_status_changed',
     playerId: targetPlayerId,
     pokemonName: targetPokemon.name,
-    status: {
-      kind: 'confusion',
-      turnsRemaining: confusionDuration,
-    },
+    status: appliedStatus,
     active: true,
     sourcePlayerId: params.context.attackerAction.playerId,
     moveName: params.context.move.name,
   });
 }
 
-function sampleConfusionDuration(random: () => number) {
-  return (
-    Math.floor(random() * (CONFUSION_MAX_DURATION - CONFUSION_MIN_DURATION + 1)) +
-    CONFUSION_MIN_DURATION
-  );
+function getAppliedStatusKind(status: AppliedMoveStatus) {
+  return status.status;
+}
+
+function resolveVolatileStatus(
+  status: Extract<AppliedMoveStatus, { kind: 'volatile-status' }>['status'],
+  random: () => number,
+) {
+  return createVolatileStatus(status, random);
 }

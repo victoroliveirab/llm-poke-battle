@@ -76,7 +76,7 @@ describe('move: Stun Spore', () => {
         0, // Player 1 accuracy check (75% accuracy)
       ],
     });
-    fixture.setActivePokemonParalysis('player-two', true);
+    fixture.setActivePokemonMajorStatus('player-two', 'paralysis');
 
     const { events } = fixture.execute('Stun Spore', 'Sludge Bomb');
 

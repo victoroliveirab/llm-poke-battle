@@ -1,4 +1,4 @@
-import { PokemonMove } from '../../species';
+import { PokemonMove, PokemonStatusEffect } from '../../species';
 import { MoveDefinition, MoveEffect } from './types';
 
 export function fromSpeciesMove(move: PokemonMove): MoveDefinition {
@@ -18,12 +18,7 @@ export function fromSpeciesMove(move: PokemonMove): MoveDefinition {
   }
 
   for (const statusEffect of move.statusEffects ?? []) {
-    effects.push({
-      kind: 'apply-status',
-      target: statusEffect.target,
-      status: statusEffect.status,
-      chance: statusEffect.chance,
-    });
+    effects.push(fromSpeciesStatusEffect(statusEffect));
   }
 
   return {
@@ -33,5 +28,31 @@ export function fromSpeciesMove(move: PokemonMove): MoveDefinition {
     name: move.name,
     power: move.power,
     type: move.type,
+  };
+}
+
+function fromSpeciesStatusEffect(
+  statusEffect: PokemonStatusEffect,
+): Extract<MoveEffect, { kind: 'apply-status' }> {
+  if (statusEffect.kind === 'volatile-status') {
+    return {
+      kind: 'apply-status',
+      target: statusEffect.target,
+      status: {
+        kind: 'volatile-status',
+        status: statusEffect.status,
+      },
+      chance: statusEffect.chance,
+    };
+  }
+
+  return {
+    kind: 'apply-status',
+    target: statusEffect.target,
+    status: {
+      kind: 'major-status',
+      status: statusEffect.status,
+    },
+    chance: statusEffect.chance,
   };
 }

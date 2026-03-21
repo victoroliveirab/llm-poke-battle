@@ -9,6 +9,7 @@ import {
 } from './party-state';
 import { PokemonSpecies } from '../species';
 import { executeMove } from './moves/executor';
+import { clearVolatileStatuses } from './status-state';
 import { TurnAction } from './types';
 import { defaultStatusHandlerRegistry } from './statuses/registry';
 import { runEndTurnHooks } from './statuses/runtime';
@@ -269,7 +270,7 @@ function applySwitch(
 
   const activePokemon = party[0];
   if (activePokemon && activePokemon.name !== pokemonName) {
-    activePokemon.volatileStatuses = [];
+    clearVolatileStatuses(activePokemon);
   }
 
   pokemon.used = true;

@@ -8,6 +8,9 @@ export type VolatileStatus =
       turnsRemaining: number;
     };
 
+const CONFUSION_MIN_DURATION = 1;
+const CONFUSION_MAX_DURATION = 4;
+
 export type VolatileStatusKind = VolatileStatus['kind'];
 
 export type StatusKind = MajorStatusKind | VolatileStatusKind;
@@ -49,4 +52,26 @@ export function isVolatileStatusKind(
 
 export function cloneVolatileStatus(status: VolatileStatus): VolatileStatus {
   return { ...status };
+}
+
+export function clearVolatileStatuses(
+  pokemon: Pick<StatusState, 'volatileStatuses'>,
+) {
+  pokemon.volatileStatuses = [];
+}
+
+export function createVolatileStatus(
+  kind: VolatileStatusKind,
+  random: () => number,
+): VolatileStatus {
+  switch (kind) {
+    case 'confusion':
+      return {
+        kind: 'confusion',
+        turnsRemaining:
+          Math.floor(
+            random() * (CONFUSION_MAX_DURATION - CONFUSION_MIN_DURATION + 1),
+          ) + CONFUSION_MIN_DURATION,
+      };
+  }
 }

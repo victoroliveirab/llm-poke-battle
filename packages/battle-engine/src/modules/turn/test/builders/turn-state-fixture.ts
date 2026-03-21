@@ -66,10 +66,11 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
     }
   }
 
-  function setActivePokemonParalysis(playerId: string, isParalyzed: boolean) {
-    getActivePokemon(simulatedParties, playerId).majorStatus = isParalyzed
-      ? 'paralysis'
-      : null;
+  function setActivePokemonMajorStatus(
+    playerId: string,
+    majorStatus: ReturnType<typeof getActivePokemon>['majorStatus'],
+  ) {
+    getActivePokemon(simulatedParties, playerId).majorStatus = majorStatus;
   }
 
   function setActivePokemonHealth(playerId: string, health: number) {
@@ -113,7 +114,7 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
       );
     },
     setActivePokemonHealth,
-    setActivePokemonParalysis,
+    setActivePokemonMajorStatus,
     setActivePokemonStages,
     simulatedParties,
     switchPokemon,

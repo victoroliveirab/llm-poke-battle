@@ -18,7 +18,7 @@ describe('turn paralysis status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.setActivePokemonParalysis(PLAYER_ONE_ID, true);
+    fixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, 'paralysis');
 
     const events = fixture.resolveAttackTurn('Strength', 'Sludge Bomb').events;
 
@@ -50,7 +50,7 @@ describe('turn paralysis status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.setActivePokemonParalysis(PLAYER_ONE_ID, true);
+    fixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, 'paralysis');
 
     const events = fixture.resolveAttackTurn('Strength', 'Sludge Bomb').events;
 
@@ -142,7 +142,7 @@ describe('turn paralysis status effect', () => {
     });
     paralysisFixture.setActivePokemonHealth(PLAYER_ONE_ID, 1);
     paralysisFixture.setActivePokemonHealth(PLAYER_TWO_ID, 1);
-    paralysisFixture.setActivePokemonParalysis(PLAYER_ONE_ID, true);
+    paralysisFixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, 'paralysis');
 
     const paralysisTurn = paralysisFixture.resolveAttackTurn('Strength', 'Drill Peck');
     expect(

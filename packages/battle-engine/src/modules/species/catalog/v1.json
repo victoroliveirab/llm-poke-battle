@@ -23,6 +23,7 @@
           "statusEffects": [
             {
               "target": "opponent",
+              "kind": "major-status",
               "status": "burn",
               "chance": 10
             }
@@ -140,6 +141,7 @@
           "statusEffects": [
             {
               "target": "opponent",
+              "kind": "major-status",
               "status": "paralysis",
               "chance": 30
             }
@@ -249,6 +251,7 @@
           "statusEffects": [
             {
               "target": "opponent",
+              "kind": "major-status",
               "status": "paralysis",
               "chance": 100
             }
@@ -333,6 +336,7 @@
           "statusEffects": [
             {
               "target": "opponent",
+              "kind": "major-status",
               "status": "freeze",
               "chance": 10
             }
@@ -356,6 +360,7 @@
           "statusEffects": [
             {
               "target": "opponent",
+              "kind": "volatile-status",
               "status": "confusion",
               "chance": 100
             }

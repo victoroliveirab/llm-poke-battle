@@ -1,8 +1,18 @@
 import { PartyEntry } from '../../party/party';
 import { PokemonSpecies, PokemonType } from '../../species';
 import { StageStat, TurnAction } from '../types';
-import { StatusKind } from '../status-state';
+import { MajorStatusKind, VolatileStatusKind } from '../status-state';
 import { MoveStatusContext, StatusHandlerRegistry } from '../statuses/types';
+
+export type AppliedMoveStatus =
+  | {
+      kind: 'major-status';
+      status: MajorStatusKind;
+    }
+  | {
+      kind: 'volatile-status';
+      status: VolatileStatusKind;
+    };
 
 export type MoveEffect =
   | {
@@ -17,7 +27,7 @@ export type MoveEffect =
   | {
       kind: 'apply-status';
       target: 'self' | 'opponent';
-      status: StatusKind;
+      status: AppliedMoveStatus;
       chance: number;
     };
 

@@ -5,7 +5,26 @@ import { DomainEvent } from '../../engine/events';
 import { EngineModule } from '../../engine/module';
 import { pokemonTypeEnum } from '../../shared/schemas';
 
-const statusValues = ['paralysis', 'burn', 'freeze', 'confusion'] as const;
+const majorStatusValues = ['paralysis', 'burn', 'freeze'] as const;
+const volatileStatusValues = ['confusion'] as const;
+const statusTargetSchema = z.enum(['self', 'opponent']);
+const statusChanceSchema = z.number();
+const majorStatusEffectSchema = z.object({
+  target: statusTargetSchema,
+  kind: z.literal('major-status'),
+  status: z.enum(majorStatusValues),
+  chance: statusChanceSchema,
+});
+const volatileStatusEffectSchema = z.object({
+  target: statusTargetSchema,
+  kind: z.literal('volatile-status'),
+  status: z.enum(volatileStatusValues),
+  chance: statusChanceSchema,
+});
+const catalogStatusEffectSchema = z.union([
+  majorStatusEffectSchema,
+  volatileStatusEffectSchema,
+]);
 
 const catalogOptionMoveSchema = z.object({
   name: z.string(),
@@ -14,15 +33,7 @@ const catalogOptionMoveSchema = z.object({
   pp: z.number(),
   type: pokemonTypeEnum,
   class: z.enum(['physical', 'special']),
-  statusEffects: z
-    .array(
-      z.object({
-        target: z.enum(['self', 'opponent']),
-        status: z.enum(statusValues),
-        chance: z.number(),
-      }),
-    )
-    .optional(),
+  statusEffects: z.array(catalogStatusEffectSchema).optional(),
   statChanges: z
     .array(
       z.object({
@@ -65,6 +76,7 @@ export const catalogSchema = z.object({
 
 export type PokemonCatalog = z.infer<typeof catalogSchema>['options'];
 export type PokemonMove = z.infer<typeof catalogOptionMoveSchema>;
+export type PokemonStatusEffect = z.infer<typeof catalogStatusEffectSchema>;
 export type PokemonSpecies = z.infer<typeof catalogOptionSchema>;
 export type PokemonType = z.infer<typeof pokemonTypeEnum>;
 

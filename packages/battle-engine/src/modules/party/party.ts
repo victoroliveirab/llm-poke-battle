@@ -1,5 +1,6 @@
 import { PokemonSpecies } from '../species';
 import {
+  clearVolatileStatuses,
   cloneVolatileStatus,
   MajorStatusKind,
   StatusKind,
@@ -109,7 +110,7 @@ export class Party {
     const activePokemon = this.pokemon[0];
     if (activePokemon && activePokemon.name !== name) {
       this.resetBattleStages(activePokemon.name);
-      activePokemon.volatileStatuses = [];
+      clearVolatileStatuses(activePokemon);
     }
 
     pokemon.used = true;

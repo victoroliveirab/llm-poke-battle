@@ -79,7 +79,7 @@ describe('move: Body Slam', () => {
         0.5, // damage random factor
       ],
     });
-    fixture.setActivePokemonParalysis('player-two', true);
+    fixture.setActivePokemonMajorStatus('player-two', 'paralysis');
 
     const { events } = fixture.execute('Body Slam', 'Sludge Bomb');
 
