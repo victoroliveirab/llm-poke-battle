@@ -1,0 +1,69 @@
+import { describe, expect, it } from 'bun:test';
+import { createBattleFixture } from './test/builders/battle-fixture';
+
+describe('turn battle integration', () => {
+  it('exposes battle stages and removes accuracy from public party state', () => {
+    const fixture = createBattleFixture();
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Nidoking', 'Raichu', 'Charizard'],
+    );
+
+    const state = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<Record<string, unknown>>;
+    };
+    const activePokemon = state.player[0];
+    if (!activePokemon) {
+      throw new Error('Expected an active Pokemon in player state.');
+    }
+
+    expect('accuracyStage' in activePokemon).toBe(true);
+    expect('attackStage' in activePokemon).toBe(true);
+    expect('criticalStage' in activePokemon).toBe(true);
+    expect('defenseStage' in activePokemon).toBe(true);
+    expect('evasionStage' in activePokemon).toBe(true);
+    expect('specialAttackStage' in activePokemon).toBe(true);
+    expect('specialDefenseStage' in activePokemon).toBe(true);
+    expect('accuracy' in activePokemon).toBe(false);
+  });
+
+  it('resolves a full turn through the public Battle API', () => {
+    const fixture = createBattleFixture({
+      randomSequence: [
+        0.95, // Charizard Rock Slide miss check (90% accuracy)
+        0.1, // Nidoking Sludge Bomb hit check
+        0.5, // Nidoking crit check
+        0, // Nidoking damage random factor
+      ],
+    });
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Nidoking', 'Raichu', 'Charizard'],
+    );
+
+    const events = fixture.resolveAttackTurn('Rock Slide', 'Sludge Bomb');
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'move.consumed' &&
+          event.playerId === 'player-one' &&
+          event.moveName === 'Rock Slide',
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'attack.missed' &&
+          event.playerId === 'player-one' &&
+          event.moveName === 'Rock Slide',
+      ),
+    ).toBe(true);
+
+    const state = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<{ moves: Array<{ name: string; remaining: number }> }>;
+    };
+    const rockSlide = state.player[0]?.moves.find((move) => move.name === 'Rock Slide');
+    expect(rockSlide?.remaining).toBe(9);
+  });
+});

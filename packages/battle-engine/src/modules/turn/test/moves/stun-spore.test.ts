@@ -1,22 +1,17 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  buildBattleWithRandomSequence,
-  resolveAttackTurn,
-  setActivePokemonParalysis,
-} from '../turn-test-utils';
+import { createMoveFixture } from '../builders/move-fixture';
 
 describe('move: Stun Spore', () => {
   it('lands and inflicts paralysis on the opponent', () => {
-    const game = buildBattleWithRandomSequence([
-      0.5, // Player 2 accuracy check for Sludge Bomb
-      0.9, // Player 2 critical check (fails)
-      0.5, // Player 2 damage random factor
-      0, // Player 1 accuracy check (75% accuracy)
-    ]);
-    game.selectParty('player-one', ['Exeggutor', 'Fearow', 'Charizard']);
-    game.selectParty('player-two', ['Nidoking', 'Fearow', 'Charizard']);
+    const fixture = createMoveFixture({
+      playerOneParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Nidoking', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // Player 1 accuracy check (75% accuracy)
+      ],
+    });
 
-    const events = resolveAttackTurn(game, 'Stun Spore', 'Sludge Bomb');
+    const { events } = fixture.execute('Stun Spore', 'Sludge Bomb');
 
     expect(
       events.some(
@@ -45,16 +40,15 @@ describe('move: Stun Spore', () => {
   });
 
   it('misses without inflicting paralysis', () => {
-    const game = buildBattleWithRandomSequence([
-      0.5, // Player 2 accuracy check for Sludge Bomb
-      0.9, // Player 2 critical check (fails)
-      0.5, // Player 2 damage random factor
-      0.99, // Player 1 accuracy check (miss at 75%)
-    ]);
-    game.selectParty('player-one', ['Exeggutor', 'Fearow', 'Charizard']);
-    game.selectParty('player-two', ['Nidoking', 'Fearow', 'Charizard']);
+    const fixture = createMoveFixture({
+      playerOneParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Nidoking', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0.99, // Player 1 accuracy check (miss at 75%)
+      ],
+    });
 
-    const events = resolveAttackTurn(game, 'Stun Spore', 'Sludge Bomb');
+    const { events } = fixture.execute('Stun Spore', 'Sludge Bomb');
 
     expect(
       events.some(
@@ -75,17 +69,16 @@ describe('move: Stun Spore', () => {
   });
 
   it('emits already_affected when the target is already paralyzed', () => {
-    const game = buildBattleWithRandomSequence([
-      0.5, // Player 2 accuracy check for Sludge Bomb
-      0.9, // Player 2 critical check (fails)
-      0.5, // Player 2 damage random factor
-      0, // Player 1 accuracy check (75% accuracy)
-    ]);
-    game.selectParty('player-one', ['Exeggutor', 'Fearow', 'Charizard']);
-    game.selectParty('player-two', ['Nidoking', 'Fearow', 'Charizard']);
-    setActivePokemonParalysis(game, 'player-two', true);
+    const fixture = createMoveFixture({
+      playerOneParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Nidoking', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // Player 1 accuracy check (75% accuracy)
+      ],
+    });
+    fixture.setActivePokemonParalysis('player-two', true);
 
-    const events = resolveAttackTurn(game, 'Stun Spore', 'Sludge Bomb');
+    const { events } = fixture.execute('Stun Spore', 'Sludge Bomb');
 
     expect(
       events.some(

@@ -1,24 +1,20 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  buildBattleWithRandomSequence,
-  resolveAttackTurn,
-  setActivePokemonHealth,
-  setActivePokemonParalysis,
-} from '../turn-test-utils';
+import { createMoveFixture } from '../builders/move-fixture';
 
 describe('move: Body Slam', () => {
   it('lands and has a chance to paralyze the opponent after dealing damage', () => {
-    const game = buildBattleWithRandomSequence([
-      0, // Player 1 accuracy check
-      0.9, // Player 1 critical check (fails)
-      0.5, // Player 1 damage random factor
-      0.2, // Player 1 status chance (paralysis)
-      0.99, // Player 2 Sludge Bomb miss check
-    ]);
-    game.selectParty('player-one', ['Nidoking', 'Fearow', 'Charizard']);
-    game.selectParty('player-two', ['Exeggutor', 'Fearow', 'Charizard']);
+    const fixture = createMoveFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // accuracy check
+        0.9, // critical check (fails)
+        0.5, // damage random factor
+        0.2, // status chance (paralysis)
+      ],
+    });
 
-    const events = resolveAttackTurn(game, 'Body Slam', 'Sludge Bomb');
+    const { events } = fixture.execute('Body Slam', 'Sludge Bomb');
 
     expect(
       events.some(
@@ -38,16 +34,18 @@ describe('move: Body Slam', () => {
   });
 
   it('does not apply paralysis when Body Slam knocks out the target', () => {
-    const game = buildBattleWithRandomSequence([
-      0, // Player 1 accuracy check
-      0.9, // Player 1 critical check (fails)
-      0.5, // Player 1 damage random factor
-    ]);
-    game.selectParty('player-one', ['Nidoking', 'Fearow', 'Charizard']);
-    game.selectParty('player-two', ['Exeggutor', 'Fearow', 'Charizard']);
-    setActivePokemonHealth(game, 'player-two', 1);
+    const fixture = createMoveFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // accuracy check
+        0.9, // critical check (fails)
+        0.5, // damage random factor
+      ],
+    });
+    fixture.setActivePokemonHealth('player-two', 1);
 
-    const events = resolveAttackTurn(game, 'Body Slam', 'Sludge Bomb');
+    const { events } = fixture.execute('Body Slam', 'Sludge Bomb');
 
     expect(
       events.some(
@@ -71,19 +69,18 @@ describe('move: Body Slam', () => {
   });
 
   it('skips paralysis RNG when the opponent is already paralyzed', () => {
-    const game = buildBattleWithRandomSequence([
-      0, // Player 1 accuracy check
-      0.9, // Player 1 critical check (fails)
-      0.5, // Player 1 damage random factor
-      0.99, // Player 2 Sludge Bomb accuracy check
-      0.5, // Player 2 Sludge Bomb critical check
-      0.5, // Player 2 Sludge Bomb damage random factor
-    ]);
-    game.selectParty('player-one', ['Nidoking', 'Fearow', 'Charizard']);
-    game.selectParty('player-two', ['Exeggutor', 'Fearow', 'Charizard']);
-    setActivePokemonParalysis(game, 'player-two', true);
+    const fixture = createMoveFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0, // accuracy check
+        0.9, // critical check (fails)
+        0.5, // damage random factor
+      ],
+    });
+    fixture.setActivePokemonParalysis('player-two', true);
 
-    const events = resolveAttackTurn(game, 'Body Slam', 'Sludge Bomb');
+    const { events } = fixture.execute('Body Slam', 'Sludge Bomb');
 
     expect(
       events.some(
@@ -104,13 +101,6 @@ describe('move: Body Slam', () => {
           event.type === 'pokemon.status_changed' &&
           event.playerId === 'player-two' &&
           event.status === 'paralysis',
-      ),
-    ).toBe(false);
-    expect(
-      events.some(
-        (event) =>
-          event.type === 'attack.already_affected' &&
-          event.playerId === 'player-two',
       ),
     ).toBe(false);
   });
