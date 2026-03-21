@@ -138,6 +138,14 @@ export type TurnActionTimelineEntrySnapshot =
       reasoning: string;
     }
   | {
+      type: 'status_damage';
+      playerId: string;
+      publicName: string;
+      pokemonName: string;
+      status: Exclude<MajorStatus, null>;
+      damage: number;
+    }
+  | {
       type: 'fainted';
       playerId: string;
       publicName: string;
@@ -931,6 +939,23 @@ function buildTurnActionsSnapshot(
       continue;
     }
 
+    if (event.type === 'pokemon.hurt_by_status') {
+      const player = playersById.get(event.playerId);
+      if (!player) {
+        continue;
+      }
+
+      timeline.push({
+        type: 'status_damage',
+        playerId: event.playerId,
+        publicName: player.publicName,
+        pokemonName: event.pokemonName,
+        status: event.status,
+        damage: event.damage,
+      });
+      continue;
+    }
+
     if (event.type === 'pokemon.fainted') {
       const player = playersById.get(event.playerId);
       if (!player) {
@@ -1208,6 +1233,17 @@ function cloneTurnActionTimelineEntries(
         toPokemon: entry.toPokemon,
         forced: entry.forced,
         reasoning: entry.reasoning,
+      };
+    }
+
+    if (entry.type === 'status_damage') {
+      return {
+        type: 'status_damage',
+        playerId: entry.playerId,
+        publicName: entry.publicName,
+        pokemonName: entry.pokemonName,
+        status: entry.status,
+        damage: entry.damage,
       };
     }
 

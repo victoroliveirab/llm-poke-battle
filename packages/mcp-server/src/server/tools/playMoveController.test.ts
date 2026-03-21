@@ -174,6 +174,84 @@ describe('play_move reasoning requirement', () => {
     ).toBe(true);
   });
 
+  it('includes burn residual damage in turn snapshots', async () => {
+    const setup = await setupGameLoop();
+    const room = getRoom(setup.roomHandle);
+    if (!room || !room.game) {
+      throw new Error('Expected room game to exist for burn snapshot assertions.');
+    }
+    const playerTwoId = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    if (!playerTwoId) {
+      throw new Error('Expected player two id for burn snapshot assertions.');
+    }
+
+    const internals = room.game as unknown as {
+      context: unknown;
+      partyModule: {
+        onEvent: (event: unknown, context: unknown) => unknown[];
+      };
+    };
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.major_status_changed',
+        playerId: playerTwoId,
+        pokemonName: 'Charizard',
+        status: 'burn',
+        active: true,
+        sourcePlayerId: 'player-one',
+        moveName: 'Fire Punch',
+      },
+      internals.context,
+    );
+
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: 'Switch tempo while burn chip accumulates.',
+          payload: {
+            attackName: 'Strength',
+          },
+        },
+      },
+      { sessionState: setup.player1Session },
+    );
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: 'Attempt a miss so burn damage is the only chip this turn.',
+          payload: {
+            attackName: 'Strength',
+          },
+        },
+      },
+      { sessionState: setup.player2Session },
+    );
+
+    const snapshot = listRoomTurnSnapshots(room, 1)[0];
+    if (!snapshot) {
+      throw new Error('Expected turn snapshot with burn residual damage.');
+    }
+
+    const burnEntry = snapshot.actions.timeline.find(
+      (
+        entry,
+      ): entry is Extract<
+        (typeof snapshot.actions.timeline)[number],
+        { type: 'status_damage' }
+      > =>
+        entry.type === 'status_damage' &&
+        entry.playerId === playerTwoId &&
+        entry.pokemonName === 'Charizard' &&
+        entry.status === 'burn',
+    );
+    expect(burnEntry).toBeDefined();
+    expect(burnEntry?.damage).toBeGreaterThan(0);
+  });
+
   it('records misses as non-executed attack outcomes with zero damage timeline entries', async () => {
     const setup = await setupGameLoop();
     const room = getRoom(setup.roomHandle);

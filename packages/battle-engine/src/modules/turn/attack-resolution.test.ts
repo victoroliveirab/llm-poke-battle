@@ -183,6 +183,27 @@ describe('turn attack resolution', () => {
     expect(defender.health).toBe(initialHealth - adjustedDamage);
   });
 
+  it('reduces physical damage when the attacker is burned', () => {
+    const baselineFixture = createMoveFixture({
+      randomSequence: [0, 0.9, 0],
+    });
+    const baselineDamage = getDamageAppliedEvent(
+      baselineFixture.execute('Strength', 'Sludge Bomb').events,
+      PLAYER_ONE_ID,
+    ).damage;
+
+    const burnedFixture = createMoveFixture({
+      randomSequence: [0, 0.9, 0],
+    });
+    burnedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'burn';
+    const burnedDamage = getDamageAppliedEvent(
+      burnedFixture.execute('Strength', 'Sludge Bomb').events,
+      PLAYER_ONE_ID,
+    ).damage;
+
+    expect(burnedDamage).toBe(Math.floor(baselineDamage / 2));
+  });
+
   it('applies special attack and special defense stages to damage calculation', () => {
     const baselineFixture = createMoveFixture({
       randomSequence: [

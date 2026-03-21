@@ -116,6 +116,14 @@ type TurnActionTimelineEntrySnapshot =
       reasoning: string;
     }
   | {
+      type: 'status_damage';
+      playerId: string;
+      publicName: string;
+      pokemonName: string;
+      status: Exclude<MajorStatus, null>;
+      damage: number;
+    }
+  | {
       type: 'fainted';
       playerId: string;
       publicName: string;
@@ -528,6 +536,13 @@ function printTurnActions(actions: TurnActionsSnapshot) {
         continue;
       }
 
+      if (entry.type === 'status_damage') {
+        console.log(
+          `${entry.publicName}: ${entry.pokemonName} took ${entry.damage} damage from ${formatStatusNoun(entry.status)}`,
+        );
+        continue;
+      }
+
       console.log(
         `Fainted: ${entry.publicName} - ${entry.pokemonName}`,
       );
@@ -664,6 +679,19 @@ function formatStatusAdjective(status: StatusKind | undefined) {
 function formatStatusChange(status: StatusKind | undefined, active: boolean | undefined) {
   const adjective = formatStatusAdjective(status);
   return active ? `is now ${adjective}` : `is no longer ${adjective}`;
+}
+
+function formatStatusNoun(status: Exclude<MajorStatus, null>) {
+  if (status === 'paralysis') {
+    return 'paralysis';
+  }
+  if (status === 'burn') {
+    return 'burn';
+  }
+  if (status === 'freeze') {
+    return 'freeze';
+  }
+  return 'status';
 }
 
 function hasAnyPartySelectionReasoning(

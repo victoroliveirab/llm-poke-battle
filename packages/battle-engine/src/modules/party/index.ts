@@ -96,6 +96,12 @@ export class PartyModule implements EngineModule {
       return [];
     }
 
+    if (event.type === 'pokemon.hurt_by_status') {
+      const party = this.getPartyObject(event.playerId);
+      party.applyDamage(event.pokemonName, event.damage);
+      return [];
+    }
+
     if (event.type === 'pokemon.volatile_status_changed') {
       const party = this.getPartyObject(event.playerId);
       if (event.active) {

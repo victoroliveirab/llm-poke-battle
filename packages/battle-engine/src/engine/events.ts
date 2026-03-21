@@ -67,6 +67,13 @@ export type DomainEvent =
       moveName: string;
     }
   | {
+      type: 'pokemon.hurt_by_status';
+      playerId: string;
+      pokemonName: string;
+      status: MajorStatusKind;
+      damage: number;
+    }
+  | {
       type: 'pokemon.volatile_status_changed';
       playerId: string;
       pokemonName: string;

@@ -15,11 +15,18 @@
       "moves": [
         {
           "name": "Fire Punch",
-          "power": 90,
+          "power": 75,
           "accuracy": 100,
           "pp": 15,
           "type": "fire",
-          "class": "special"
+          "class": "physical",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "status": "burn",
+              "chance": 10
+            }
+          ]
         },
         {
           "name": "Strength",
