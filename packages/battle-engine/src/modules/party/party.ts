@@ -1,4 +1,11 @@
 import { PokemonSpecies } from '../species';
+import {
+  cloneVolatileStatus,
+  MajorStatusKind,
+  StatusKind,
+  StatusState,
+  VolatileStatus,
+} from '../turn/status-state';
 
 export type PartyMove = {
   accuracy: number;
@@ -19,7 +26,7 @@ export type PartyStats = {
   hp: number;
 };
 
-export type PartyEntry = {
+export type PartyEntry = StatusState & {
   accuracyStage: number;
   attackStage: number;
   criticalStage: number;
@@ -29,7 +36,6 @@ export type PartyEntry = {
   level: number;
   moves: PartyMove[];
   name: string;
-  isParalyzed: boolean;
   specialAttackStage: number;
   specialDefenseStage: number;
   stats: PartyStats;
@@ -73,6 +79,7 @@ export class Party {
       ...entry,
       moves: entry.moves.map((move) => ({ ...move })),
       stats: { ...entry.stats },
+      volatileStatuses: entry.volatileStatuses.map(cloneVolatileStatus),
     }));
   }
 
@@ -146,16 +153,50 @@ export class Party {
     return nextStage;
   }
 
-  applyStatus(pokemonName: string, status: 'paralysis', active: boolean) {
+  applyMajorStatus(pokemonName: string, status: MajorStatusKind) {
     const pokemon = this.getPokemonByName(pokemonName);
     if (!pokemon) {
       throw new Error(`Pokemon ${pokemonName} not found in party.`);
     }
 
-    if (status === 'paralysis') {
-      pokemon.isParalyzed = active;
-      return;
+    if (pokemon.majorStatus !== null) {
+      return false;
     }
+
+    pokemon.majorStatus = status;
+    return true;
+  }
+
+  applyVolatileStatus(pokemonName: string, status: VolatileStatus) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    if (pokemon.volatileStatuses.some((entry) => entry.kind === status.kind)) {
+      return false;
+    }
+
+    pokemon.volatileStatuses.push(cloneVolatileStatus(status));
+    return true;
+  }
+
+  clearStatus(pokemonName: string, status: StatusKind) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    if (pokemon.majorStatus === status) {
+      pokemon.majorStatus = null;
+      return true;
+    }
+
+    const before = pokemon.volatileStatuses.length;
+    pokemon.volatileStatuses = pokemon.volatileStatuses.filter(
+      (entry) => entry.kind !== status,
+    );
+    return before !== pokemon.volatileStatuses.length;
   }
 
   resetBattleStages(pokemonName: string) {
@@ -298,6 +339,7 @@ export class Party {
       evasionStage: 0,
       health: stats.hp,
       level: this.level,
+      majorStatus: null,
       moves: pokemon.moves.map((move) => ({
         accuracy: move.accuracy,
         maxPP: move.pp,
@@ -308,11 +350,11 @@ export class Party {
         used: 0,
       })),
       name: pokemon.species,
-      isParalyzed: false,
       specialAttackStage: 0,
       specialDefenseStage: 0,
       stats,
       used: index === 0,
+      volatileStatuses: [],
     };
   }
 }

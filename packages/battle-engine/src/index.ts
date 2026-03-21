@@ -9,6 +9,7 @@ import { PhaseModule, GamePhase } from './modules/phase';
 import { Player, PlayerModule } from './modules/player';
 import { DefaultLoader } from './modules/species/loader';
 import { SpeciesLoader, SpeciesModule } from './modules/species';
+import { cloneVolatileStatus } from './modules/turn/status-state';
 import { TurnModule } from './modules/turn';
 import { parseAction } from './types';
 
@@ -166,11 +167,14 @@ export class Battle {
         evasionStage: entry.evasionStage,
         health: isRevealedPokemon ? entry.health : null,
         isActive: index === 0,
-        isParalyzed: isRevealedPokemon ? entry.isParalyzed : false,
+        majorStatus: isRevealedPokemon ? entry.majorStatus : null,
         name: isRevealedPokemon ? entry.name : '???',
         specialAttackStage: entry.specialAttackStage,
         specialDefenseStage: entry.specialDefenseStage,
         used: entry.used,
+        volatileStatuses: isRevealedPokemon
+          ? entry.volatileStatuses.map(cloneVolatileStatus)
+          : [],
         moves: entry.moves.map((move) =>
           move.used
             ? move
@@ -212,3 +216,11 @@ export { parseAction };
 export type { Action, ActionEnvelope } from './types';
 export type { Player } from './modules/player';
 export type { SpeciesLoader, PokemonCatalog, PokemonSpecies } from './modules/species';
+export type {
+  AppliedStatus,
+  MajorStatus,
+  MajorStatusKind,
+  StatusKind,
+  VolatileStatus,
+  VolatileStatusKind,
+} from './modules/turn/status-state';

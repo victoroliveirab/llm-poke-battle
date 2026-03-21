@@ -1,3 +1,9 @@
+import type {
+  MajorStatus,
+  StatusKind,
+  VolatileStatus,
+} from '@poke-battle/battle-engine';
+
 type SnapshotMove = {
   name: string;
   remainingPP: number;
@@ -20,7 +26,8 @@ type SnapshotPokemon = {
   maxHp: number;
   moves: SnapshotMove[];
   stages: SnapshotStages;
-  isParalyzed: boolean;
+  majorStatus: MajorStatus;
+  volatileStatuses: VolatileStatus[];
 };
 
 type BoardPlayerSnapshot = {
@@ -94,7 +101,7 @@ type TurnActionTimelineEntrySnapshot =
       targetPokemon: string | null;
       damage: number;
       outcome?: 'hit' | 'miss' | 'not_executed' | 'paralyzed' | 'already_affected' | 'status';
-      status?: 'paralysis' | 'paralyzed';
+      status?: StatusKind;
       active?: boolean;
       critical: boolean;
       reasoning: string;
@@ -482,22 +489,16 @@ function printTurnActions(actions: TurnActionsSnapshot) {
           continue;
         }
         if (entry.outcome === 'already_affected') {
-          const isParalysisStatus =
-            entry.status === 'paralysis' || entry.status === 'paralyzed';
-          const statusText = isParalysisStatus ? 'paralyzed' : 'status';
+          const statusText = formatStatusAdjective(entry.status);
           console.log(
             `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} was already ${statusText} | reason: ${entry.reasoning}`,
           );
           continue;
         }
         if (entry.outcome === 'status') {
-          const isParalysisStatus =
-            entry.status === 'paralysis' || entry.status === 'paralyzed';
-          const statusText = isParalysisStatus ? 'paralyzed' : 'status changed';
-          const statusAction = entry.active ? 'inflicted' : 'removed';
           const targetPokemon = entry.targetPokemon ?? 'no target';
           console.log(
-            `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} ${statusText} ${statusAction} | reason: ${entry.reasoning}`,
+            `${entry.publicName}: attack ${entry.attackName} -> ${targetPokemon} ${formatStatusChange(entry.status, entry.active)} | reason: ${entry.reasoning}`,
           );
           continue;
         }
@@ -613,11 +614,7 @@ function printPokemon(
   console.log(
     `${label}: ${pokemon.name} (${pokemon.hp} / ${pokemon.maxHp} HP)`,
   );
-  if (pokemon.isParalyzed) {
-    console.log('Status: paralyzed');
-  } else {
-    console.log('Status: none');
-  }
+  console.log(`Status: ${formatPokemonStatuses(pokemon)}`);
   if (includeStages) {
     console.log(
       `Stages: acc ${pokemon.stages.accuracy} | atk ${pokemon.stages.attack} | crit ${pokemon.stages.critical} | def ${pokemon.stages.defense} | eva ${pokemon.stages.evasion} | spA ${pokemon.stages.specialAttack} | spD ${pokemon.stages.specialDefense}`,
@@ -627,6 +624,46 @@ function printPokemon(
     console.log(`${move.name} (${move.remainingPP} / ${move.maxPP} PP)`);
   }
   console.log('');
+}
+
+function formatPokemonStatuses(pokemon: SnapshotPokemon) {
+  const statuses: string[] = [];
+
+  if (pokemon.majorStatus !== null) {
+    statuses.push(formatStatusAdjective(pokemon.majorStatus));
+  }
+
+  for (const status of pokemon.volatileStatuses) {
+    if (status.kind === 'confusion') {
+      statuses.push(`confused (${status.turnsRemaining} turns left)`);
+      continue;
+    }
+
+    statuses.push(formatStatusAdjective(status.kind));
+  }
+
+  return statuses.length > 0 ? statuses.join(', ') : 'none';
+}
+
+function formatStatusAdjective(status: StatusKind | undefined) {
+  if (status === 'paralysis') {
+    return 'paralyzed';
+  }
+  if (status === 'burn') {
+    return 'burned';
+  }
+  if (status === 'freeze') {
+    return 'frozen';
+  }
+  if (status === 'confusion') {
+    return 'confused';
+  }
+  return 'affected';
+}
+
+function formatStatusChange(status: StatusKind | undefined, active: boolean | undefined) {
+  const adjective = formatStatusAdjective(status);
+  return active ? `is now ${adjective}` : `is no longer ${adjective}`;
 }
 
 function hasAnyPartySelectionReasoning(

@@ -10,6 +10,7 @@ import { applyDamageEffect } from './effects/damage';
 import { applyStageEffect } from './effects/stage';
 import { applyStatusEffect } from './effects/status';
 import { MoveDefinition } from './types';
+import { hasMajorStatus } from '../status-state';
 
 type ExecuteMoveParams = {
   attackerAction: TurnAction;
@@ -72,7 +73,7 @@ export function executeMove(params: ExecuteMoveParams) {
     moveName,
   });
 
-  if (attacker.isParalyzed && params.random() < PARALYSIS_CHANCE) {
+  if (hasMajorStatus(attacker, 'paralysis') && params.random() < PARALYSIS_CHANCE) {
     params.events.push({
       type: 'attack.paralyzed',
       playerId: params.attackerAction.playerId,

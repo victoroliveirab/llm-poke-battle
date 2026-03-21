@@ -21,7 +21,8 @@ describe('move executor', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'pokemon.status_changed' && event.status === 'paralysis',
+          event.type === 'pokemon.major_status_changed' &&
+          event.status === 'paralysis',
       ),
     ).toBe(false);
   });

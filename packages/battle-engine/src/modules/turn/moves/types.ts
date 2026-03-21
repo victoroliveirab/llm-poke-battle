@@ -2,6 +2,7 @@ import { PartyEntry } from '../../party/party';
 import { PokemonSpecies, PokemonType } from '../../species';
 import { DomainEvent } from '../../../engine/events';
 import { StageStat, TurnAction } from '../types';
+import { MajorStatusKind } from '../status-state';
 
 export type MoveEffect =
   | {
@@ -16,7 +17,7 @@ export type MoveEffect =
   | {
       kind: 'apply-status';
       target: 'self' | 'opponent';
-      status: 'paralysis';
+      status: MajorStatusKind;
       chance: number;
     };
 

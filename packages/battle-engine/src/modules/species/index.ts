@@ -5,6 +5,8 @@ import { DomainEvent } from '../../engine/events';
 import { EngineModule } from '../../engine/module';
 import { pokemonTypeEnum } from '../../shared/schemas';
 
+const majorStatusValues = ['paralysis', 'burn', 'freeze'] as const;
+
 const catalogOptionMoveSchema = z.object({
   name: z.string(),
   power: z.number(),
@@ -16,7 +18,7 @@ const catalogOptionMoveSchema = z.object({
     .array(
       z.object({
         target: z.enum(['self', 'opponent']),
-        status: z.enum(['paralysis']),
+        status: z.enum(majorStatusValues),
         chance: z.number(),
       }),
     )

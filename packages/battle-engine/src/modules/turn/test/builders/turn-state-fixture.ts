@@ -65,7 +65,9 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
   }
 
   function setActivePokemonParalysis(playerId: string, isParalyzed: boolean) {
-    getActivePokemon(simulatedParties, playerId).isParalyzed = isParalyzed;
+    getActivePokemon(simulatedParties, playerId).majorStatus = isParalyzed
+      ? 'paralysis'
+      : null;
   }
 
   function setActivePokemonHealth(playerId: string, health: number) {

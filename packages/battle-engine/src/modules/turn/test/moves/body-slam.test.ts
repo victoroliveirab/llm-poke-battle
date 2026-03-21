@@ -25,7 +25,7 @@ describe('move: Body Slam', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'pokemon.status_changed' &&
+          event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
           event.status === 'paralysis' &&
           event.active === true,
@@ -56,7 +56,7 @@ describe('move: Body Slam', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'pokemon.status_changed' &&
+          event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
           event.status === 'paralysis',
       ),
@@ -98,7 +98,7 @@ describe('move: Body Slam', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'pokemon.status_changed' &&
+          event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
           event.status === 'paralysis',
       ),

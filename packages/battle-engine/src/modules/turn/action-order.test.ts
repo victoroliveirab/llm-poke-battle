@@ -33,8 +33,8 @@ function buildActivePokemon(overrides: Partial<PartyEntry>): PartyEntry {
     defenseStage: 0,
     evasionStage: 0,
     health: 100,
-    isParalyzed: false,
     level: 50,
+    majorStatus: null,
     moves: [],
     name: 'Charizard',
     specialAttackStage: 0,
@@ -48,6 +48,7 @@ function buildActivePokemon(overrides: Partial<PartyEntry>): PartyEntry {
       speed: 100,
     },
     used: true,
+    volatileStatuses: [],
     ...overrides,
   };
 }
@@ -70,7 +71,7 @@ describe('turn action order', () => {
       playerOneAction,
       playerTwoAction,
       buildActivePokemon({
-        isParalyzed: true,
+        majorStatus: 'paralysis',
         stats: {
           attack: 100,
           defense: 100,

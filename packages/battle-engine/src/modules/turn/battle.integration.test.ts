@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'bun:test';
+import { GameContext } from '../../engine/context';
+import { PartyModule } from '../party';
 import { createBattleFixture } from './test/builders/battle-fixture';
 
 describe('turn battle integration', () => {
@@ -65,5 +67,59 @@ describe('turn battle integration', () => {
     };
     const rockSlide = state.player[0]?.moves.find((move) => move.name === 'Rock Slide');
     expect(rockSlide?.remaining).toBe(9);
+  });
+
+  it('exposes major and volatile statuses through public player state', () => {
+    const fixture = createBattleFixture();
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Nidoking', 'Raichu', 'Charizard'],
+    );
+
+    const internals = fixture.game as unknown as {
+      context: GameContext;
+      partyModule: PartyModule;
+    };
+
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.major_status_changed',
+        playerId: 'player-one',
+        pokemonName: 'Charizard',
+        status: 'paralysis',
+        active: true,
+        sourcePlayerId: 'player-two',
+        moveName: 'Stun Spore',
+      },
+      internals.context,
+    );
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.volatile_status_changed',
+        playerId: 'player-one',
+        pokemonName: 'Charizard',
+        status: {
+          kind: 'confusion',
+          turnsRemaining: 2,
+        },
+        active: true,
+        sourcePlayerId: 'player-two',
+        moveName: 'Supersonic',
+      },
+      internals.context,
+    );
+
+    const state = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<Record<string, unknown>>;
+    };
+    const activePokemon = state.player[0];
+    if (!activePokemon) {
+      throw new Error('Expected an active Pokemon in player state.');
+    }
+
+    expect(activePokemon.majorStatus).toBe('paralysis');
+    expect(activePokemon.volatileStatuses).toEqual([
+      { kind: 'confusion', turnsRemaining: 2 },
+    ]);
   });
 });

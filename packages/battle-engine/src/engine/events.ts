@@ -1,4 +1,9 @@
 import { Action } from '../types';
+import {
+  MajorStatusKind,
+  StatusKind,
+  VolatileStatus,
+} from '../modules/turn/status-state';
 
 export type DomainEvent =
   | {
@@ -41,7 +46,7 @@ export type DomainEvent =
       targetPlayerId: string;
       pokemonName: string;
       targetPokemonName: string;
-      status: 'paralysis';
+      status: StatusKind;
       moveName: string;
     }
   | {
@@ -53,10 +58,19 @@ export type DomainEvent =
       moveName: string;
     }
   | {
-      type: 'pokemon.status_changed';
+      type: 'pokemon.major_status_changed';
       playerId: string;
       pokemonName: string;
-      status: 'paralysis';
+      status: MajorStatusKind;
+      active: boolean;
+      sourcePlayerId: string;
+      moveName: string;
+    }
+  | {
+      type: 'pokemon.volatile_status_changed';
+      playerId: string;
+      pokemonName: string;
+      status: VolatileStatus;
       active: boolean;
       sourcePlayerId: string;
       moveName: string;

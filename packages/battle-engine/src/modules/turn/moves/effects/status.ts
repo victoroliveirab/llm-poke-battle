@@ -1,4 +1,5 @@
 import { MoveExecutionContext, MoveEffect } from '../types';
+import { hasMajorStatus } from '../../status-state';
 
 type StatusEffect = Extract<MoveEffect, { kind: 'apply-status' }>;
 
@@ -14,8 +15,7 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
   const targetPlayerId = isSelfTarget
     ? params.context.attackerAction.playerId
     : params.context.defenderAction.playerId;
-  const isAlreadyAffected =
-    params.effect.status === 'paralysis' ? targetPokemon.isParalyzed : false;
+  const isAlreadyAffected = hasMajorStatus(targetPokemon, params.effect.status);
 
   if (isAlreadyAffected && params.isStatusOnlyMove) {
     params.context.events.push({
@@ -24,7 +24,7 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
       targetPlayerId,
       pokemonName: params.context.attacker.name,
       targetPokemonName: targetPokemon.name,
-      status: 'paralysis',
+      status: params.effect.status,
       moveName: params.context.move.name,
     });
     return;
@@ -34,20 +34,18 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
     return;
   }
 
-  if (params.effect.status === 'paralysis') {
-    const chance = Math.min(1, Math.max(0, params.effect.chance / 100));
-    if (params.context.random() >= chance) {
-      return;
-    }
-
-    params.context.events.push({
-      type: 'pokemon.status_changed',
-      playerId: targetPlayerId,
-      pokemonName: targetPokemon.name,
-      status: 'paralysis',
-      active: true,
-      sourcePlayerId: params.context.attackerAction.playerId,
-      moveName: params.context.move.name,
-    });
+  const chance = Math.min(1, Math.max(0, params.effect.chance / 100));
+  if (params.context.random() >= chance) {
+    return;
   }
+
+  params.context.events.push({
+    type: 'pokemon.major_status_changed',
+    playerId: targetPlayerId,
+    pokemonName: targetPokemon.name,
+    status: params.effect.status,
+    active: true,
+    sourcePlayerId: params.context.attackerAction.playerId,
+    moveName: params.context.move.name,
+  });
 }

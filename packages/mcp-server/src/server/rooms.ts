@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Battle } from '@poke-battle/battle-engine';
+import type {
+  MajorStatus,
+  StatusKind,
+  VolatileStatus,
+} from '@poke-battle/battle-engine';
 
 export const MAX_PLAYERS_PER_ROOM = 2;
 
@@ -27,7 +32,8 @@ export type SnapshotPokemon = {
   maxHp: number;
   moves: SnapshotMove[];
   stages: SnapshotStages;
-  isParalyzed: boolean;
+  majorStatus: MajorStatus;
+  volatileStatuses: VolatileStatus[];
 };
 
 export type BoardPlayerSnapshot = {
@@ -117,7 +123,7 @@ export type TurnActionTimelineEntrySnapshot =
       targetPokemon: string | null;
       damage: number;
       outcome: 'hit' | 'miss' | 'not_executed' | 'paralyzed' | 'already_affected' | 'status';
-      status?: 'paralysis' | 'paralyzed';
+      status?: StatusKind;
       active?: boolean;
       critical: boolean;
       reasoning: string;
@@ -532,7 +538,8 @@ type FullPartyEntry = {
   evasionStage: number;
   specialAttackStage: number;
   specialDefenseStage: number;
-  isParalyzed: boolean;
+  majorStatus: MajorStatus;
+  volatileStatuses: VolatileStatus[];
   stats: {
     hp: number;
   };
@@ -583,7 +590,8 @@ function buildSnapshotPokemon(entry: FullPartyEntry): SnapshotPokemon {
       specialAttack: entry.specialAttackStage,
       specialDefense: entry.specialDefenseStage,
     },
-    isParalyzed: entry.isParalyzed,
+    majorStatus: entry.majorStatus,
+    volatileStatuses: entry.volatileStatuses.map((status) => ({ ...status })),
   };
 }
 
@@ -817,7 +825,7 @@ function buildTurnActionsSnapshot(
       continue;
     }
 
-    if (event.type === 'pokemon.status_changed') {
+    if (event.type === 'pokemon.major_status_changed') {
       const submittedAction = submittedActions.get(event.sourcePlayerId);
       const attackName =
         submittedAction?.type === 'attack'
@@ -845,6 +853,42 @@ function buildTurnActionsSnapshot(
           damage: 0,
           outcome: 'status',
           status: event.status,
+          active: event.active,
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'pokemon.volatile_status_changed') {
+      const submittedAction = submittedActions.get(event.sourcePlayerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.sourcePlayerId);
+      attackOutcomeByPlayer.set(event.sourcePlayerId, {
+        attackName,
+        targetPokemon: event.pokemonName,
+        damage: 0,
+        executed: true,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.sourcePlayerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.pokemonName,
+          damage: 0,
+          outcome: 'status',
+          status: event.status.kind,
           active: event.active,
           critical: false,
           reasoning,
@@ -1045,7 +1089,8 @@ function cloneSnapshotPokemon(snapshot: SnapshotPokemon): SnapshotPokemon {
       specialAttack: snapshot.stages.specialAttack,
       specialDefense: snapshot.stages.specialDefense,
     },
-    isParalyzed: snapshot.isParalyzed,
+    majorStatus: snapshot.majorStatus,
+    volatileStatuses: snapshot.volatileStatuses.map((status) => ({ ...status })),
   };
 }
 

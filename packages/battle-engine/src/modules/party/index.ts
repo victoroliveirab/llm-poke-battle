@@ -85,9 +85,25 @@ export class PartyModule implements EngineModule {
       return [];
     }
 
-    if (event.type === 'pokemon.status_changed') {
+    if (event.type === 'pokemon.major_status_changed') {
       const party = this.getPartyObject(event.playerId);
-      party.applyStatus(event.pokemonName, event.status, event.active);
+      if (event.active) {
+        party.applyMajorStatus(event.pokemonName, event.status);
+        return [];
+      }
+
+      party.clearStatus(event.pokemonName, event.status);
+      return [];
+    }
+
+    if (event.type === 'pokemon.volatile_status_changed') {
+      const party = this.getPartyObject(event.playerId);
+      if (event.active) {
+        party.applyVolatileStatus(event.pokemonName, event.status);
+        return [];
+      }
+
+      party.clearStatus(event.pokemonName, event.status.kind);
       return [];
     }
 
