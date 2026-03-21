@@ -2,6 +2,8 @@ import { isCriticalHit } from '../../calculations/critical';
 import { getModifiedBattleStat } from '../../calculations/accuracy';
 import { calculateDamage } from '../../calculations/damage';
 import { getTypeEffectiveness } from '../../calculations/type-effectiveness';
+import { defaultStatusHandlerRegistry } from '../../statuses/registry';
+import { runModifyDamageHooks } from '../../statuses/runtime';
 import { MoveExecutionContext } from '../types';
 
 export function applyDamageEffect(context: MoveExecutionContext) {
@@ -31,7 +33,7 @@ export function applyDamageEffect(context: MoveExecutionContext) {
   );
   const critical = isCriticalHit(context.attacker.criticalStage, context.random);
 
-  const damage = calculateDamage({
+  const baseDamage = calculateDamage({
     level: context.attacker.level,
     power: context.move.power,
     attack: attackStat,
@@ -40,6 +42,12 @@ export function applyDamageEffect(context: MoveExecutionContext) {
     typeEffectiveness,
     critical,
     random: context.random,
+  });
+  const { damage } = runModifyDamageHooks({
+    context,
+    damage: baseDamage,
+    pokemon: context.attacker,
+    registry: defaultStatusHandlerRegistry,
   });
 
   context.defender.health = Math.max(0, context.defender.health - damage);

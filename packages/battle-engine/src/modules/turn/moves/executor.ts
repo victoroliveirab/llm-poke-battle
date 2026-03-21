@@ -10,7 +10,8 @@ import { applyDamageEffect } from './effects/damage';
 import { applyStageEffect } from './effects/stage';
 import { applyStatusEffect } from './effects/status';
 import { MoveDefinition } from './types';
-import { hasMajorStatus } from '../status-state';
+import { defaultStatusHandlerRegistry } from '../statuses/registry';
+import { runBeforeMoveHooks } from '../statuses/runtime';
 
 type ExecuteMoveParams = {
   attackerAction: TurnAction;
@@ -20,8 +21,6 @@ type ExecuteMoveParams = {
   random: () => number;
   simulatedParties: Map<string, PartyEntry[]>;
 };
-
-const PARALYSIS_CHANCE = 0.25;
 
 export function executeMove(params: ExecuteMoveParams) {
   if (params.attackerAction.action.type !== 'attack') {
@@ -63,6 +62,16 @@ export function executeMove(params: ExecuteMoveParams) {
   }
 
   const move = fromSpeciesMove(speciesMove);
+  const statusContext = {
+    simulatedParties: params.simulatedParties,
+    playerId: params.attackerAction.playerId,
+    opponentPlayerId: params.defenderAction.playerId,
+    random: params.random,
+    events: params.events,
+    attacker,
+    defender,
+    move,
+  };
 
   moveState.used += 1;
   moveState.remaining = Math.max(0, moveState.remaining - 1);
@@ -73,15 +82,13 @@ export function executeMove(params: ExecuteMoveParams) {
     moveName,
   });
 
-  if (hasMajorStatus(attacker, 'paralysis') && params.random() < PARALYSIS_CHANCE) {
-    params.events.push({
-      type: 'attack.paralyzed',
-      playerId: params.attackerAction.playerId,
-      targetPlayerId: params.defenderAction.playerId,
-      pokemonName: attacker.name,
-      targetPokemonName: defender.name,
-      moveName,
-    });
+  if (
+    !runBeforeMoveHooks({
+      context: statusContext,
+      pokemon: attacker,
+      registry: defaultStatusHandlerRegistry,
+    }).canAct
+  ) {
     return { defenderFainted: false };
   }
 
@@ -146,7 +153,10 @@ export function executeMove(params: ExecuteMoveParams) {
         defenderSpecies,
         events: params.events,
         move,
+        opponentPlayerId: params.defenderAction.playerId,
+        playerId: params.attackerAction.playerId,
         random: params.random,
+        simulatedParties: params.simulatedParties,
       });
       if (damageResult.defenderFainted) {
         return damageResult;
@@ -166,7 +176,10 @@ export function executeMove(params: ExecuteMoveParams) {
         defenderSpecies,
         events: params.events,
         move,
+        opponentPlayerId: params.defenderAction.playerId,
+        playerId: params.attackerAction.playerId,
         random: params.random,
+        simulatedParties: params.simulatedParties,
       },
     });
   }

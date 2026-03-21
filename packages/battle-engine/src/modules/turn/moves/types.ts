@@ -1,8 +1,8 @@
 import { PartyEntry } from '../../party/party';
 import { PokemonSpecies, PokemonType } from '../../species';
-import { DomainEvent } from '../../../engine/events';
 import { StageStat, TurnAction } from '../types';
 import { MajorStatusKind } from '../status-state';
+import { MoveStatusContext } from '../statuses/types';
 
 export type MoveEffect =
   | {
@@ -30,14 +30,9 @@ export type MoveDefinition = {
   type: PokemonType;
 };
 
-export type MoveExecutionContext = {
-  attacker: PartyEntry;
+export type MoveExecutionContext = MoveStatusContext & {
   attackerAction: TurnAction;
   attackerSpecies: PokemonSpecies;
-  defender: PartyEntry;
   defenderAction: TurnAction;
   defenderSpecies: PokemonSpecies;
-  events: DomainEvent[];
-  move: MoveDefinition;
-  random: () => number;
 };
