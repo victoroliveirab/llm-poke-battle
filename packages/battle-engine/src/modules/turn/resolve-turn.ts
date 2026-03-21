@@ -5,6 +5,7 @@ import {
   getActivePokemon,
   getPendingReplacementPlayers,
   hasHealthyPokemon,
+  needsReplacement,
 } from './party-state';
 import { PokemonSpecies } from '../species';
 import { executeMove } from './moves/executor';
@@ -22,9 +23,15 @@ type ResolveTurnParams = {
   statusHandlerRegistry?: StatusHandlerRegistry;
 };
 
-type ResolveTurnResult = {
+export type SuspendedTurn = {
+  remainingAction: TurnAction;
+  waitingForPlayerId: string;
+};
+
+export type ResolveTurnResult = {
   events: DomainEvent[];
   pendingReplacementPlayers: string[];
+  suspendedTurn: SuspendedTurn | null;
   winner: string | null;
 };
 
@@ -69,6 +76,20 @@ export function resolveTurn(params: ResolveTurnParams): ResolveTurnResult {
   );
 
   if (!defenderFaintedAfterFirstAttack) {
+    const suspendedTurn = getSuspendedTurn(
+      orderedActions[0],
+      orderedActions[1],
+      simulatedParties,
+    );
+    if (suspendedTurn) {
+      return {
+        events,
+        pendingReplacementPlayers: [suspendedTurn.waitingForPlayerId],
+        suspendedTurn,
+        winner: null,
+      };
+    }
+
     performAttackIfPossible(
       orderedActions[1],
       orderedActions[0],
@@ -78,6 +99,67 @@ export function resolveTurn(params: ResolveTurnParams): ResolveTurnResult {
     );
   }
 
+  return finalizeTurn({
+    events,
+    playerIds: [playerA, playerB],
+    simulatedParties,
+    params,
+  });
+}
+
+export function resumeTurnAfterReplacement(params: {
+  playerIds: [string, string];
+  replacementAction: TurnAction;
+  remainingAction: TurnAction;
+  simulatedParties: Map<string, PartyEntry[]>;
+  getSpecies: (speciesName: string) => PokemonSpecies;
+  random: () => number;
+  statusHandlerRegistry?: StatusHandlerRegistry;
+}): ResolveTurnResult {
+  const events: DomainEvent[] = [];
+
+  if (params.replacementAction.action.type !== 'switch') {
+    throw new Error('Replacement action must be a switch.');
+  }
+
+  applySwitch(
+    params.simulatedParties,
+    params.replacementAction.playerId,
+    params.replacementAction.action.payload.newPokemon,
+  );
+  events.push({
+    type: 'pokemon.switched',
+    playerId: params.replacementAction.playerId,
+    pokemonName: params.replacementAction.action.payload.newPokemon,
+  });
+
+  performActionIfPossible(
+    params.remainingAction,
+    params.replacementAction,
+    params.simulatedParties,
+    params,
+    events,
+  );
+
+  return finalizeTurn({
+    events,
+    playerIds: params.playerIds,
+    simulatedParties: params.simulatedParties,
+    params,
+  });
+}
+
+function finalizeTurn(params: {
+  events: DomainEvent[];
+  playerIds: [string, string];
+  simulatedParties: Map<string, PartyEntry[]>;
+  params: Pick<
+    ResolveTurnParams,
+    'getSpecies' | 'random' | 'statusHandlerRegistry'
+  >;
+}): ResolveTurnResult {
+  const [playerA, playerB] = params.playerIds;
+  const { simulatedParties, events } = params;
   const createStatusContext = (
     playerId: string,
     opponentPlayerId: string,
@@ -85,11 +167,11 @@ export function resolveTurn(params: ResolveTurnParams): ResolveTurnResult {
     simulatedParties,
     playerId,
     opponentPlayerId,
-    random: params.random,
+    random: params.params.random,
     events,
   });
   const statusHandlerRegistry =
-    params.statusHandlerRegistry ?? defaultStatusHandlerRegistry;
+    params.params.statusHandlerRegistry ?? defaultStatusHandlerRegistry;
 
   runEndTurnHooks({
     context: createStatusContext(playerA, playerB),
@@ -114,7 +196,27 @@ export function resolveTurn(params: ResolveTurnParams): ResolveTurnResult {
     pendingReplacementPlayers: winner
       ? []
       : getPendingReplacementPlayers(simulatedParties, [playerA, playerB]),
+    suspendedTurn: null,
     winner,
+  };
+}
+
+function getSuspendedTurn(
+  completedAction: TurnAction,
+  remainingAction: TurnAction,
+  simulatedParties: Map<string, PartyEntry[]>,
+): SuspendedTurn | null {
+  if (!needsReplacement(simulatedParties, completedAction.playerId)) {
+    return null;
+  }
+
+  if (!hasHealthyPokemon(simulatedParties, remainingAction.playerId)) {
+    return null;
+  }
+
+  return {
+    remainingAction,
+    waitingForPlayerId: completedAction.playerId,
   };
 }
 
@@ -165,6 +267,11 @@ function applySwitch(
     throw new Error(`Pokemon ${pokemonName} already fainted.`);
   }
 
+  const activePokemon = party[0];
+  if (activePokemon && activePokemon.name !== pokemonName) {
+    activePokemon.volatileStatuses = [];
+  }
+
   pokemon.used = true;
   const before = party.slice(0, index);
   const after = party.slice(index + 1);
@@ -187,4 +294,34 @@ function performAttackIfPossible(
     simulatedParties,
     statusHandlerRegistry: params.statusHandlerRegistry,
   }).defenderFainted;
+}
+
+function performActionIfPossible(
+  attackerAction: TurnAction,
+  defenderAction: TurnAction,
+  simulatedParties: Map<string, PartyEntry[]>,
+  params: Pick<ResolveTurnParams, 'getSpecies' | 'random' | 'statusHandlerRegistry'>,
+  events: DomainEvent[],
+) {
+  if (attackerAction.action.type === 'switch') {
+    applySwitch(
+      simulatedParties,
+      attackerAction.playerId,
+      attackerAction.action.payload.newPokemon,
+    );
+    events.push({
+      type: 'pokemon.switched',
+      playerId: attackerAction.playerId,
+      pokemonName: attackerAction.action.payload.newPokemon,
+    });
+    return;
+  }
+
+  performAttackIfPossible(
+    attackerAction,
+    defenderAction,
+    simulatedParties,
+    params,
+    events,
+  );
 }

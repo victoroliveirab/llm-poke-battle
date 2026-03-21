@@ -42,6 +42,10 @@ export function executeMove(params: ExecuteMoveParams) {
     return { defenderFainted: false };
   }
 
+  if (defender.health <= 0) {
+    return { defenderFainted: false };
+  }
+
   const moveName = params.attackerAction.action.payload.attackName;
   const moveState = attacker.moves.find((move) => move.name === moveName);
   if (!moveState) {

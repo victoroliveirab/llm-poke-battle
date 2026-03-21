@@ -9,7 +9,7 @@ import { PhaseModule, GamePhase } from './modules/phase';
 import { Player, PlayerModule } from './modules/player';
 import { DefaultLoader } from './modules/species/loader';
 import { SpeciesLoader, SpeciesModule } from './modules/species';
-import { cloneVolatileStatus } from './modules/turn/status-state';
+import { cloneVolatileStatus, VolatileStatus } from './modules/turn/status-state';
 import { TurnModule } from './modules/turn';
 import { parseAction } from './types';
 
@@ -150,7 +150,10 @@ export class Battle {
     const party = this.partyModule.getParty(playerID);
 
     if (playerID === viewer) {
-      return party;
+      return party.map((entry) => ({
+        ...entry,
+        volatileStatuses: sanitizePublicVolatileStatuses(entry.volatileStatuses),
+      }));
     }
 
     const isPartySelectionPhase = this.phaseModule.getPhase() === 'party_selection';
@@ -173,7 +176,7 @@ export class Battle {
         specialDefenseStage: entry.specialDefenseStage,
         used: entry.used,
         volatileStatuses: isRevealedPokemon
-          ? entry.volatileStatuses.map(cloneVolatileStatus)
+          ? sanitizePublicVolatileStatuses(entry.volatileStatuses)
           : [],
         moves: entry.moves.map((move) =>
           move.used
@@ -189,6 +192,10 @@ export class Battle {
         ),
       };
     });
+  }
+
+  getInternalParty(playerID: string) {
+    return this.partyModule.getParty(playerID);
   }
 
   private dispatchCommand(command: DomainCommand): DomainEvent[] {
@@ -224,3 +231,13 @@ export type {
   VolatileStatus,
   VolatileStatusKind,
 } from './modules/turn/status-state';
+
+function sanitizePublicVolatileStatuses(statuses: VolatileStatus[]) {
+  return statuses.map((status) => {
+    if (status.kind === 'confusion') {
+      return { kind: 'confusion' as const };
+    }
+
+    return cloneVolatileStatus(status);
+  });
+}

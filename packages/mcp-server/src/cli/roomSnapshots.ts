@@ -105,6 +105,7 @@ type TurnActionTimelineEntrySnapshot =
         | 'miss'
         | 'not_executed'
         | 'paralyzed'
+        | 'confused'
         | 'frozen'
         | 'already_affected'
         | 'status';
@@ -500,6 +501,12 @@ function printTurnActions(actions: TurnActionsSnapshot) {
         if (entry.outcome === 'paralyzed') {
           console.log(
             `${entry.publicName}: attack ${entry.attackName} -> did not execute - fully paralyzed | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
+        if (entry.outcome === 'confused') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> hurt itself in confusion for ${entry.damage} damage | reason: ${entry.reasoning}`,
           );
           continue;
         }

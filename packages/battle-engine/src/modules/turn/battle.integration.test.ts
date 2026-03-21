@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { GameContext } from '../../engine/context';
+import { Party } from '../party/party';
 import { PartyModule } from '../party';
 import { createBattleFixture } from './test/builders/battle-fixture';
 
@@ -119,7 +120,147 @@ describe('turn battle integration', () => {
 
     expect(activePokemon.majorStatus).toBe('paralysis');
     expect(activePokemon.volatileStatuses).toEqual([
-      { kind: 'confusion', turnsRemaining: 2 },
+      { kind: 'confusion' },
     ]);
+  });
+
+  it('keeps confusion duration in sync through the public Battle API after a turn resolves', () => {
+    const fixture = createBattleFixture({
+      randomSequence: [
+        0.34, // Player 1 confusion self-hit fails
+        0, // Player 1 accuracy check
+        0.9, // Player 1 crit check
+        0.5, // Player 1 damage random factor
+        0.5, // Player 2 accuracy check
+        0.9, // Player 2 crit check
+        0, // Player 2 damage random factor
+      ],
+    });
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Exeggutor', 'Fearow', 'Charizard'],
+    );
+
+    const internals = fixture.game as unknown as {
+      context: GameContext;
+      partyModule: PartyModule;
+    };
+
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.volatile_status_changed',
+        playerId: 'player-one',
+        pokemonName: 'Charizard',
+        status: {
+          kind: 'confusion',
+          turnsRemaining: 2,
+        },
+        active: true,
+        sourcePlayerId: 'player-two',
+        moveName: 'Confuse Ray',
+      },
+      internals.context,
+    );
+
+    fixture.resolveAttackTurn('Strength', 'Sludge Bomb');
+
+    const state = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<Record<string, unknown>>;
+    };
+    const activePokemon = state.player[0];
+    if (!activePokemon) {
+      throw new Error('Expected an active Pokemon in player state.');
+    }
+
+    expect(activePokemon.volatileStatuses).toEqual([
+      { kind: 'confusion' },
+    ]);
+  });
+
+  it('resumes an interrupted turn after a replacement switch and targets the replacement', () => {
+    const fixture = createBattleFixture({
+      randomSequence: [
+        0.2, // Player 1 confusion self-hit succeeds
+        0, // Player 1 confusion damage random factor
+        0.5, // Player 2 accuracy check after replacement
+        0.9, // Player 2 crit check
+        0, // Player 2 damage random factor
+      ],
+    });
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Exeggutor', 'Fearow', 'Charizard'],
+    );
+
+    const internals = fixture.game as unknown as {
+      context: GameContext;
+      partyModule: unknown;
+    };
+    const partyModuleInternals = internals.partyModule as {
+      parties: Map<string, Party>;
+    };
+    const playerOneParty = partyModuleInternals.parties.get('player-one');
+    const playerOneCharizard = playerOneParty?.getPokemonByName('Charizard');
+    if (!playerOneParty || !playerOneCharizard) {
+      throw new Error('Expected direct access to player one party internals.');
+    }
+    playerOneCharizard.health = 1;
+    playerOneCharizard.volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 2 },
+    ];
+
+    fixture.game.selectAction({
+      playerID: 'player-one',
+      type: 'attack',
+      payload: {
+        attackName: 'Strength',
+      },
+    });
+    const interruptedEvents = fixture.game.selectAction({
+      playerID: 'player-two',
+      type: 'attack',
+      payload: {
+        attackName: 'Sludge Bomb',
+      },
+    });
+
+    expect(
+      interruptedEvents.some(
+        (event) => event.type === 'pokemon.fainted' && event.playerId === 'player-one',
+      ),
+    ).toBe(true);
+    expect(
+      interruptedEvents.some((event) => event.type === 'turn.resolved'),
+    ).toBe(false);
+    expect(fixture.game.getStateAsPlayer('player-one').turn).toBe(1);
+
+    const resumedEvents = fixture.game.selectAction({
+      playerID: 'player-one',
+      type: 'switch',
+      payload: {
+        newPokemon: 'Raichu',
+      },
+    });
+
+    expect(
+      resumedEvents.some(
+        (event) =>
+          event.type === 'pokemon.switched' &&
+          event.playerId === 'player-one' &&
+          event.pokemonName === 'Raichu',
+      ),
+    ).toBe(true);
+    expect(
+      resumedEvents.some(
+        (event) =>
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-two' &&
+          event.pokemonName === 'Raichu',
+      ),
+    ).toBe(true);
+    expect(
+      resumedEvents.some((event) => event.type === 'turn.resolved'),
+    ).toBe(true);
+    expect(fixture.game.getStateAsPlayer('player-one').turn).toBe(2);
   });
 });

@@ -66,6 +66,15 @@ export type DomainEvent =
       moveName: string;
     }
   | {
+      type: 'attack.confused';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      moveName: string;
+      damage: number;
+    }
+  | {
       type: 'pokemon.major_status_changed';
       playerId: string;
       pokemonName: string;
@@ -89,6 +98,12 @@ export type DomainEvent =
       active: boolean;
       sourcePlayerId: string;
       moveName: string;
+    }
+  | {
+      type: 'pokemon.volatile_status_updated';
+      playerId: string;
+      pokemonName: string;
+      status: VolatileStatus;
     }
   | {
       type: 'damage.applied';

@@ -109,6 +109,7 @@ export class Party {
     const activePokemon = this.pokemon[0];
     if (activePokemon && activePokemon.name !== name) {
       this.resetBattleStages(activePokemon.name);
+      activePokemon.volatileStatuses = [];
     }
 
     pokemon.used = true;
@@ -178,6 +179,26 @@ export class Party {
     }
 
     pokemon.volatileStatuses.push(cloneVolatileStatus(status));
+    return true;
+  }
+
+  setVolatileStatus(pokemonName: string, status: VolatileStatus) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    const nextStatus = cloneVolatileStatus(status);
+    const index = pokemon.volatileStatuses.findIndex(
+      (entry) => entry.kind === status.kind,
+    );
+
+    if (index === -1) {
+      pokemon.volatileStatuses.push(nextStatus);
+      return true;
+    }
+
+    pokemon.volatileStatuses[index] = nextStatus;
     return true;
   }
 

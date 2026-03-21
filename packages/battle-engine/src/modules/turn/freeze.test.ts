@@ -98,6 +98,32 @@ describe('turn freeze status effect', () => {
     expect(switchedOutPokemon?.majorStatus).toBe('freeze');
   });
 
+  it('clears volatile statuses but keeps major status when switching out', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Charizard', 'Raichu', 'Nidoking'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0.5, // Player 2 accuracy check after the switch
+        0.9, // Player 2 crit check
+        0, // Player 2 damage random factor
+      ],
+    });
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'paralysis';
+    fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 2 },
+    ];
+
+    fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Raichu'),
+      fixture.attack(PLAYER_TWO_ID, 'Sludge Bomb'),
+    );
+    const party = fixture.simulatedParties.get(PLAYER_ONE_ID);
+    const switchedOutPokemon = party?.find((pokemon) => pokemon.name === 'Charizard');
+
+    expect(switchedOutPokemon?.majorStatus).toBe('paralysis');
+    expect(switchedOutPokemon?.volatileStatuses).toEqual([]);
+  });
+
   it('can thaw and get frozen again in the same turn when the frozen pokemon is faster', () => {
     const fixture = createTurnStateFixture({
       playerOneParty: ['Charizard', 'Raichu', 'Nidoking'],

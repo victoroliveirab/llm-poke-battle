@@ -352,7 +352,14 @@
           "accuracy": 100,
           "pp": 10,
           "type": "ghost",
-          "class": "special"
+          "class": "special",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "status": "confusion",
+              "chance": 100
+            }
+          ]
         },
         {
           "name": "Growl",

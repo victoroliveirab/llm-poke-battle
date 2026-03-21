@@ -206,36 +206,42 @@ describe('turn attack resolution', () => {
 
   it('applies special attack and special defense stages to damage calculation', () => {
     const baselineFixture = createMoveFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
       randomSequence: [
-        0, // Fire Punch hit check
+        0, // Sludge Bomb hit check
         0.9, // crit check (fails)
         0, // damage random factor
       ],
     });
     const baselineDamage = getDamageAppliedEvent(
-      baselineFixture.execute('Fire Punch', 'Sludge Bomb').events,
+      baselineFixture.execute('Sludge Bomb', 'Sludge Bomb').events,
       PLAYER_ONE_ID,
     ).damage;
 
     const boostedSpecialAttackFixture = createMoveFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
       randomSequence: [0, 0.9, 0],
     });
     boostedSpecialAttackFixture.setActivePokemonStages(PLAYER_ONE_ID, {
       specialAttack: 2,
     });
     const boostedSpecialAttackDamage = getDamageAppliedEvent(
-      boostedSpecialAttackFixture.execute('Fire Punch', 'Sludge Bomb').events,
+      boostedSpecialAttackFixture.execute('Sludge Bomb', 'Sludge Bomb').events,
       PLAYER_ONE_ID,
     ).damage;
 
     const boostedSpecialDefenseFixture = createMoveFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
       randomSequence: [0, 0.9, 0],
     });
     boostedSpecialDefenseFixture.setActivePokemonStages('player-two', {
       specialDefense: 2,
     });
     const boostedSpecialDefenseDamage = getDamageAppliedEvent(
-      boostedSpecialDefenseFixture.execute('Fire Punch', 'Sludge Bomb').events,
+      boostedSpecialDefenseFixture.execute('Sludge Bomb', 'Sludge Bomb').events,
       PLAYER_ONE_ID,
     ).damage;
 

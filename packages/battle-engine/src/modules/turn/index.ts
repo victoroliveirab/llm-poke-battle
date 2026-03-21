@@ -3,21 +3,28 @@ import { GameContext } from '../../engine/context';
 import { DomainEvent } from '../../engine/events';
 import { EngineModule } from '../../engine/module';
 import { InvalidMoveError } from '../../errors';
-import { resolveTurn } from './resolve-turn';
+import {
+  resolveTurn,
+  resumeTurnAfterReplacement,
+  SuspendedTurn,
+} from './resolve-turn';
 import { SubmitActionCommand } from './types';
 
 export class TurnModule implements EngineModule {
   private pendingActions = new Map<string, SubmitActionCommand['action']>();
   private pendingReplacementPlayers = new Set<string>();
+  private suspendedTurn: SuspendedTurn | null = null;
 
   init(_context: GameContext) {
     this.pendingActions.clear();
     this.pendingReplacementPlayers.clear();
+    this.suspendedTurn = null;
   }
 
   reset() {
     this.pendingActions.clear();
     this.pendingReplacementPlayers.clear();
+    this.suspendedTurn = null;
   }
 
   handleCommand(command: DomainCommand, context: GameContext): DomainEvent[] {
@@ -49,12 +56,20 @@ export class TurnModule implements EngineModule {
 
       this.validateAction(playerID, command.action, context);
       this.pendingReplacementPlayers.delete(playerID);
-      return [
-        {
-          type: 'pokemon.switched',
+      if (this.suspendedTurn?.waitingForPlayerId === playerID) {
+        return this.resumeTurn(context, {
           playerId: playerID,
-          pokemonName: command.action.payload.newPokemon,
-        },
+          action: command.action,
+        });
+      }
+
+      const switchEvent: DomainEvent = {
+        type: 'pokemon.switched',
+        playerId: playerID,
+        pokemonName: command.action.payload.newPokemon,
+      };
+      return [
+        switchEvent,
       ];
     }
 
@@ -128,6 +143,7 @@ export class TurnModule implements EngineModule {
     });
 
     this.pendingReplacementPlayers.clear();
+    this.suspendedTurn = result.suspendedTurn;
     if (!result.winner) {
       for (const playerId of result.pendingReplacementPlayers) {
         this.pendingReplacementPlayers.add(playerId);
@@ -135,6 +151,56 @@ export class TurnModule implements EngineModule {
     }
 
     this.pendingActions.clear();
+
+    return result.events;
+  }
+
+  private resumeTurn(
+    context: GameContext,
+    replacementAction: {
+      playerId: string;
+      action: Extract<SubmitActionCommand['action'], { type: 'switch' }>;
+    },
+  ) {
+    if (!this.suspendedTurn) {
+      const switchEvent: DomainEvent = {
+        type: 'pokemon.switched',
+        playerId: replacementAction.playerId,
+        pokemonName: replacementAction.action.payload.newPokemon,
+      };
+      return [
+        switchEvent,
+      ];
+    }
+
+    const players = context.players.getPlayers();
+    const playerA = players[0];
+    const playerB = players[1];
+
+    if (!playerA || !playerB) {
+      throw new Error('Exactly two players are required to resolve turns.');
+    }
+
+    const simulatedParties = new Map([
+      [playerA.id, context.party.getParty(playerA.id)],
+      [playerB.id, context.party.getParty(playerB.id)],
+    ]);
+    const result = resumeTurnAfterReplacement({
+      playerIds: [playerA.id, playerB.id],
+      replacementAction,
+      remainingAction: this.suspendedTurn.remainingAction,
+      simulatedParties,
+      getSpecies: (speciesName) => context.species.getSpecies(speciesName),
+      random: () => context.random(),
+    });
+
+    this.pendingReplacementPlayers.clear();
+    this.suspendedTurn = result.suspendedTurn;
+    if (!result.winner) {
+      for (const playerId of result.pendingReplacementPlayers) {
+        this.pendingReplacementPlayers.add(playerId);
+      }
+    }
 
     return result.events;
   }

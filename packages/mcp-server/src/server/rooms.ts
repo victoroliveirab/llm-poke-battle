@@ -127,6 +127,7 @@ export type TurnActionTimelineEntrySnapshot =
         | 'miss'
         | 'not_executed'
         | 'paralyzed'
+        | 'confused'
         | 'frozen'
         | 'already_affected'
         | 'status';
@@ -570,7 +571,7 @@ function buildBoardPlayerSnapshot(
   playerId: string,
   publicName: string,
 ): BoardPlayerSnapshot {
-  const party = game.getParty(playerId, playerId) as FullPartyEntry[];
+  const party = game.getInternalParty(playerId) as FullPartyEntry[];
   const active = party[0];
 
   if (!active) {
@@ -833,6 +834,40 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: 0,
           outcome: 'paralyzed',
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.confused') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: event.damage,
+        executed: false,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: event.damage,
+          outcome: 'confused',
           critical: false,
           reasoning,
         });

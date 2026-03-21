@@ -1,7 +1,13 @@
 import { MoveExecutionContext, MoveEffect } from '../types';
-import { hasMajorStatus } from '../../status-state';
+import {
+  hasMajorStatus,
+  hasVolatileStatus,
+  isMajorStatusKind,
+} from '../../status-state';
 
 type StatusEffect = Extract<MoveEffect, { kind: 'apply-status' }>;
+const CONFUSION_MIN_DURATION = 1;
+const CONFUSION_MAX_DURATION = 4;
 
 type ApplyStatusEffectParams = {
   effect: StatusEffect;
@@ -15,7 +21,9 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
   const targetPlayerId = isSelfTarget
     ? params.context.attackerAction.playerId
     : params.context.defenderAction.playerId;
-  const isAlreadyAffected = hasMajorStatus(targetPokemon, params.effect.status);
+  const isAlreadyAffected = isMajorStatusKind(params.effect.status)
+    ? hasMajorStatus(targetPokemon, params.effect.status)
+    : hasVolatileStatus(targetPokemon, params.effect.status);
 
   if (isAlreadyAffected && params.isStatusOnlyMove) {
     params.context.events.push({
@@ -39,14 +47,42 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
     return;
   }
 
-  targetPokemon.majorStatus = params.effect.status;
+  if (isMajorStatusKind(params.effect.status)) {
+    targetPokemon.majorStatus = params.effect.status;
+    params.context.events.push({
+      type: 'pokemon.major_status_changed',
+      playerId: targetPlayerId,
+      pokemonName: targetPokemon.name,
+      status: params.effect.status,
+      active: true,
+      sourcePlayerId: params.context.attackerAction.playerId,
+      moveName: params.context.move.name,
+    });
+    return;
+  }
+
+  const confusionDuration = sampleConfusionDuration(params.context.random);
+  targetPokemon.volatileStatuses.push({
+    kind: 'confusion',
+    turnsRemaining: confusionDuration,
+  });
   params.context.events.push({
-    type: 'pokemon.major_status_changed',
+    type: 'pokemon.volatile_status_changed',
     playerId: targetPlayerId,
     pokemonName: targetPokemon.name,
-    status: params.effect.status,
+    status: {
+      kind: 'confusion',
+      turnsRemaining: confusionDuration,
+    },
     active: true,
     sourcePlayerId: params.context.attackerAction.playerId,
     moveName: params.context.move.name,
   });
+}
+
+function sampleConfusionDuration(random: () => number) {
+  return (
+    Math.floor(random() * (CONFUSION_MAX_DURATION - CONFUSION_MIN_DURATION + 1)) +
+    CONFUSION_MIN_DURATION
+  );
 }

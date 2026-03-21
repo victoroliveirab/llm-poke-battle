@@ -60,4 +60,36 @@ describe('party status state', () => {
     expect(party.clearStatus('Charizard', 'confusion')).toBe(true);
     expect(party.getPokemonByName('Charizard')?.volatileStatuses).toEqual([]);
   });
+
+  it('updates an existing volatile status duration', () => {
+    const party = createParty();
+    party.applyVolatileStatus('Charizard', {
+      kind: 'confusion',
+      turnsRemaining: 3,
+    });
+
+    expect(
+      party.setVolatileStatus('Charizard', {
+        kind: 'confusion',
+        turnsRemaining: 1,
+      }),
+    ).toBe(true);
+    expect(party.getPokemonByName('Charizard')?.volatileStatuses).toEqual([
+      { kind: 'confusion', turnsRemaining: 1 },
+    ]);
+  });
+
+  it('clears volatile statuses but keeps major status when switching out', () => {
+    const party = createParty();
+    party.applyMajorStatus('Charizard', 'paralysis');
+    party.applyVolatileStatus('Charizard', {
+      kind: 'confusion',
+      turnsRemaining: 2,
+    });
+
+    party.putPokemonInFront('Raichu');
+
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toBe('paralysis');
+    expect(party.getPokemonByName('Charizard')?.volatileStatuses).toEqual([]);
+  });
 });
