@@ -309,6 +309,67 @@
           ]
         }
       ]
+    },
+    {
+      "species": "Lapras",
+      "stats": {
+        "hp": 130,
+        "attack": 85,
+        "defense": 80,
+        "specialAttack": 85,
+        "specialDefense": 95,
+        "speed": 60
+      },
+      "type1": "water",
+      "type2": "ice",
+      "moves": [
+        {
+          "name": "Ice Beam",
+          "power": 95,
+          "accuracy": 100,
+          "pp": 10,
+          "type": "ice",
+          "class": "special",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "status": "freeze",
+              "chance": 10
+            }
+          ]
+        },
+        {
+          "name": "Water Pulse",
+          "power": 60,
+          "accuracy": 100,
+          "pp": 20,
+          "type": "water",
+          "class": "special"
+        },
+        {
+          "name": "Confuse Ray",
+          "power": 0,
+          "accuracy": 100,
+          "pp": 10,
+          "type": "ghost",
+          "class": "special"
+        },
+        {
+          "name": "Growl",
+          "power": 0,
+          "accuracy": 100,
+          "pp": 40,
+          "type": "normal",
+          "class": "special",
+          "statChanges": [
+            {
+              "target": "opponent",
+              "stat": "attack",
+              "stages": -1
+            }
+          ]
+        }
+      ]
     }
   ]
 }

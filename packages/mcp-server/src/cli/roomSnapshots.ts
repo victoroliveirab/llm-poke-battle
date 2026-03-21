@@ -100,7 +100,14 @@ type TurnActionTimelineEntrySnapshot =
       attackName: string;
       targetPokemon: string | null;
       damage: number;
-      outcome?: 'hit' | 'miss' | 'not_executed' | 'paralyzed' | 'already_affected' | 'status';
+      outcome?:
+        | 'hit'
+        | 'miss'
+        | 'not_executed'
+        | 'paralyzed'
+        | 'frozen'
+        | 'already_affected'
+        | 'status';
       status?: StatusKind;
       active?: boolean;
       critical: boolean;
@@ -496,6 +503,12 @@ function printTurnActions(actions: TurnActionsSnapshot) {
           );
           continue;
         }
+        if (entry.outcome === 'frozen') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> did not execute - frozen solid | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
         if (entry.outcome === 'already_affected') {
           const statusText = formatStatusAdjective(entry.status);
           console.log(
@@ -677,6 +690,10 @@ function formatStatusAdjective(status: StatusKind | undefined) {
 }
 
 function formatStatusChange(status: StatusKind | undefined, active: boolean | undefined) {
+  if (status === 'freeze' && active === false) {
+    return 'thawed out';
+  }
+
   const adjective = formatStatusAdjective(status);
   return active ? `is now ${adjective}` : `is no longer ${adjective}`;
 }

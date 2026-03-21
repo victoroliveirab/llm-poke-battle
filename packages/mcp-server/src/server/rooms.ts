@@ -122,7 +122,14 @@ export type TurnActionTimelineEntrySnapshot =
       attackName: string;
       targetPokemon: string | null;
       damage: number;
-      outcome: 'hit' | 'miss' | 'not_executed' | 'paralyzed' | 'already_affected' | 'status';
+      outcome:
+        | 'hit'
+        | 'miss'
+        | 'not_executed'
+        | 'paralyzed'
+        | 'frozen'
+        | 'already_affected'
+        | 'status';
       status?: StatusKind;
       active?: boolean;
       critical: boolean;
@@ -826,6 +833,40 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: 0,
           outcome: 'paralyzed',
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.frozen') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: 0,
+        executed: false,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: 0,
+          outcome: 'frozen',
           critical: false,
           reasoning,
         });

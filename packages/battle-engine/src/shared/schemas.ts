@@ -17,4 +17,5 @@ export const pokemonTypeEnum = z.enum([
   'rock',
   'steel',
   'water',
+  'ghost',
 ]);

@@ -58,6 +58,14 @@ export type DomainEvent =
       moveName: string;
     }
   | {
+      type: 'attack.frozen';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      moveName: string;
+    }
+  | {
       type: 'pokemon.major_status_changed';
       playerId: string;
       pokemonName: string;
