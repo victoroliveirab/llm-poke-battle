@@ -8,6 +8,7 @@ import {
   createVolatileStatus,
   hasVolatileStatus,
 } from '../../status-state';
+import { PokemonSpecies } from '../../../species';
 
 type StatusEffect = Extract<MoveEffect, { kind: 'apply-status' }>;
 
@@ -20,6 +21,9 @@ type ApplyStatusEffectParams = {
 export function applyStatusEffect(params: ApplyStatusEffectParams) {
   const isSelfTarget = params.effect.target === 'self';
   const targetPokemon = isSelfTarget ? params.context.attacker : params.context.defender;
+  const targetSpecies = isSelfTarget
+    ? params.context.attackerSpecies
+    : params.context.defenderSpecies;
   const targetPlayerId = isSelfTarget
     ? params.context.attackerAction.playerId
     : params.context.defenderAction.playerId;
@@ -54,6 +58,20 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
   }
 
   if (isAlreadyAffected) {
+    return;
+  }
+
+  if (isImmuneToStatus(params.effect.status, targetSpecies)) {
+    if (params.isStatusOnlyMove) {
+      params.context.events.push({
+        type: 'attack.missed',
+        playerId: params.context.attackerAction.playerId,
+        targetPlayerId,
+        pokemonName: params.context.attacker.name,
+        targetPokemonName: targetPokemon.name,
+        moveName: params.context.move.name,
+      });
+    }
     return;
   }
 
@@ -105,4 +123,20 @@ function resolveVolatileStatus(
   random: () => number,
 ) {
   return createVolatileStatus(status, random);
+}
+
+function isImmuneToStatus(
+  status: AppliedMoveStatus,
+  targetSpecies: Pick<PokemonSpecies, 'type1' | 'type2'>,
+) {
+  if (status.kind !== 'major-status' || status.status !== 'poison') {
+    return false;
+  }
+
+  return (
+    targetSpecies.type1 === 'poison' ||
+    targetSpecies.type2 === 'poison' ||
+    targetSpecies.type1 === 'steel' ||
+    targetSpecies.type2 === 'steel'
+  );
 }

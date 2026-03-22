@@ -129,7 +129,15 @@
           "accuracy": 100,
           "pp": 10,
           "type": "poison",
-          "class": "special"
+          "class": "special",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "kind": "major-status",
+              "status": "poison",
+              "chance": 30
+            }
+          ]
         },
         {
           "name": "Body Slam",
@@ -231,7 +239,15 @@
           "accuracy": 100,
           "pp": 10,
           "type": "poison",
-          "class": "special"
+          "class": "special",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "kind": "major-status",
+              "status": "poison",
+              "chance": 30
+            }
+          ]
         },
         {
           "name": "Stun Spore",

@@ -6,6 +6,7 @@ import {
   PLAYER_ONE_ID,
   PLAYER_TWO_ID,
 } from '../../test/builders/shared';
+import { PokemonSpecies } from '../../../species';
 import { applyStatusEffect } from './status';
 import { MoveExecutionContext } from '../types';
 
@@ -209,9 +210,126 @@ describe('applyStatusEffect', () => {
       ),
     ).toBe(false);
   });
+
+  it('applies poison to non-immune targets', () => {
+    const context = createContext([0], {
+      defenderSpecies: {
+        type1: 'grass',
+        type2: null,
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'poison',
+        },
+      },
+      isStatusOnlyMove: false,
+      context,
+    });
+
+    expect(context.defender.majorStatus).toEqual({ kind: 'poison' });
+    expect(
+      context.events.some(
+        (event) =>
+          event.type === 'pokemon.major_status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.status.kind === 'poison' &&
+          event.active === true,
+      ),
+    ).toBe(true);
+  });
+
+  it('does not apply poison to poison-type targets', () => {
+    const context = createContext([0], {
+      defenderSpecies: {
+        type1: 'poison',
+        type2: 'ground',
+      },
+      move: {
+        name: 'Poison Powder',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'poison',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.majorStatus).toBeNull();
+    expect(context.events).toEqual([
+      {
+        type: 'attack.missed',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        moveName: 'Poison Powder',
+      },
+    ]);
+  });
+
+  it('does not apply poison to steel-type targets', () => {
+    const context = createContext([0], {
+      defenderSpecies: {
+        type1: 'steel',
+        type2: null,
+      },
+      move: {
+        name: 'Poison Powder',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'poison',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.majorStatus).toBeNull();
+    expect(context.events).toEqual([
+      {
+        type: 'attack.missed',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        moveName: 'Poison Powder',
+      },
+    ]);
+  });
 });
 
-function createContext(randomSequence: number[]): MoveExecutionContext {
+function createContext(
+  randomSequence: number[],
+  overrides: {
+    attackerSpecies?: Partial<PokemonSpecies>;
+    defenderSpecies?: Partial<PokemonSpecies>;
+    move?: Partial<MoveExecutionContext['move']>;
+  } = {},
+): MoveExecutionContext {
   const simulatedParties = new Map([
     [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Lapras', 'Fearow', 'Charizard'])],
     [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Nidoking', 'Fearow', 'Charizard'])],
@@ -238,6 +356,7 @@ function createContext(randomSequence: number[]): MoveExecutionContext {
       species: attacker.name,
       type1: 'water',
       type2: 'ice',
+      ...overrides.attackerSpecies,
     },
     defender,
     defenderAction: buildAttackAction(PLAYER_TWO_ID, 'Sludge Bomb'),
@@ -247,6 +366,7 @@ function createContext(randomSequence: number[]): MoveExecutionContext {
       species: defender.name,
       type1: 'poison',
       type2: 'ground',
+      ...overrides.defenderSpecies,
     },
     move: {
       accuracy: 100,
@@ -255,6 +375,7 @@ function createContext(randomSequence: number[]): MoveExecutionContext {
       name: 'Confuse Ray',
       power: 0,
       type: 'ghost',
+      ...overrides.move,
     },
   };
 }

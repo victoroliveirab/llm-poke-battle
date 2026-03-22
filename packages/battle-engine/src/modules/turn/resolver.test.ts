@@ -190,4 +190,107 @@ describe('turn resolver', () => {
       ),
     ).toBe(true);
   });
+
+  it('applies poison residual damage at end of turn', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0.99, // Exeggutor Stun Spore miss check
+      ],
+    });
+    const poisonedPokemon = fixture.getActivePokemon(PLAYER_TWO_ID);
+    poisonedPokemon.majorStatus = { kind: 'poison' };
+    const initialHealth = poisonedPokemon.health;
+    const expectedPoisonDamage = Math.floor(poisonedPokemon.stats.hp / 8);
+
+    const result = fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Fearow'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    expect(
+      result.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.status === 'poison' &&
+          event.damage === expectedPoisonDamage,
+      ),
+    ).toBe(true);
+    expect(fixture.getActivePokemon(PLAYER_TWO_ID).health).toBe(
+      initialHealth - expectedPoisonDamage,
+    );
+  });
+
+  it('damages a poisoned pokemon that switched in this turn', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Charizard', 'Fearow', 'Nidoking'],
+      playerTwoParty: ['Exeggutor', 'Raichu', 'Nidoking'],
+      randomSequence: [
+        0.99, // Exeggutor Stun Spore miss check
+      ],
+    });
+    const playerOneParty = fixture.simulatedParties.get(PLAYER_ONE_ID);
+    if (!playerOneParty) {
+      throw new Error('Expected player one party in resolver fixture.');
+    }
+    const switchedInPokemon = playerOneParty[1];
+    if (!switchedInPokemon) {
+      throw new Error('Expected benched pokemon for switch-in test.');
+    }
+    switchedInPokemon.majorStatus = { kind: 'poison' };
+    const initialHealth = switchedInPokemon.health;
+    const expectedPoisonDamage = Math.floor(switchedInPokemon.stats.hp / 8);
+
+    const result = fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Fearow'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    expect(
+      result.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.status === 'poison' &&
+          event.damage === expectedPoisonDamage,
+      ),
+    ).toBe(true);
+    expect(fixture.getActivePokemon(PLAYER_ONE_ID).name).toBe('Fearow');
+    expect(fixture.getActivePokemon(PLAYER_ONE_ID).health).toBe(
+      initialHealth - expectedPoisonDamage,
+    );
+  });
+
+  it('does not damage a poisoned pokemon that switched out this turn', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Charizard', 'Fearow', 'Nidoking'],
+      playerTwoParty: ['Exeggutor', 'Raichu', 'Nidoking'],
+      randomSequence: [
+        0.99, // Exeggutor Stun Spore miss check
+      ],
+    });
+    const switchedOutPokemon = fixture.getActivePokemon(PLAYER_ONE_ID);
+    switchedOutPokemon.majorStatus = { kind: 'poison' };
+    const initialHealth = switchedOutPokemon.health;
+
+    const result = fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Fearow'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    const playerOneParty = fixture.simulatedParties.get(PLAYER_ONE_ID);
+    const benchedCharizard = playerOneParty?.find((pokemon) => pokemon.name === 'Charizard');
+
+    expect(
+      result.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.status === 'poison',
+      ),
+    ).toBe(false);
+    expect(benchedCharizard?.health).toBe(initialHealth);
+  });
 });

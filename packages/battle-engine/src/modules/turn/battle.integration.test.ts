@@ -126,6 +126,34 @@ describe('turn battle integration', () => {
     ]);
   });
 
+  it('exposes poison through public player state', () => {
+    const fixture = createBattleFixture({
+      randomSequence: [
+        0, // Player 1 accuracy check
+        0.9, // Player 1 crit check
+        0.5, // Player 1 damage random factor
+        0.05, // Player 1 poison chance
+        0.99, // Player 2 Sleep Powder miss check
+      ],
+    });
+    fixture.selectParties(
+      ['Nidoking', 'Fearow', 'Charizard'],
+      ['Exeggutor', 'Fearow', 'Charizard'],
+    );
+
+    fixture.resolveAttackTurn('Sludge Bomb', 'Sleep Powder');
+
+    const state = fixture.game.getStateAsPlayer('player-two') as {
+      player: Array<Record<string, unknown>>;
+    };
+    const activePokemon = state.player[0];
+    if (!activePokemon) {
+      throw new Error('Expected an active Pokemon in player state.');
+    }
+
+    expect(activePokemon.majorStatus).toEqual({ kind: 'poison' });
+  });
+
   it('keeps confusion duration in sync through the public Battle API after a turn resolves', () => {
     const fixture = createBattleFixture({
       randomSequence: [

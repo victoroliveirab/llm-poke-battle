@@ -1,4 +1,4 @@
-export type MajorStatusKind = 'paralysis' | 'burn' | 'freeze' | 'sleep';
+export type MajorStatusKind = 'paralysis' | 'burn' | 'freeze' | 'sleep' | 'poison';
 
 export type MajorStatus =
   | null
@@ -14,6 +14,9 @@ export type MajorStatus =
   | {
       kind: 'sleep';
       turnsRemaining: number;
+    }
+  | {
+      kind: 'poison';
     };
 
 export type VolatileStatus =
@@ -61,7 +64,8 @@ export function isMajorStatusKind(status: StatusKind): status is MajorStatusKind
     status === 'paralysis' ||
     status === 'burn' ||
     status === 'freeze' ||
-    status === 'sleep'
+    status === 'sleep' ||
+    status === 'poison'
   );
 }
 
@@ -123,5 +127,7 @@ export function createMajorStatus(
           Math.floor(random() * (SLEEP_MAX_DURATION - SLEEP_MIN_DURATION + 1)) +
           SLEEP_MIN_DURATION,
       };
+    case 'poison':
+      return { kind: 'poison' };
   }
 }
