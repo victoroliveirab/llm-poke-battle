@@ -4,8 +4,8 @@ import {
   MoveEffect,
 } from '../types';
 import {
+  createMajorStatus,
   createVolatileStatus,
-  hasMajorStatus,
   hasVolatileStatus,
 } from '../../status-state';
 
@@ -26,10 +26,20 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
   const appliedStatusKind = getAppliedStatusKind(params.effect.status);
   const isAlreadyAffected =
     params.effect.status.kind === 'major-status'
-      ? hasMajorStatus(targetPokemon, params.effect.status.status)
+      ? targetPokemon.majorStatus !== null
       : hasVolatileStatus(targetPokemon, params.effect.status.status);
 
   if (isAlreadyAffected && params.isStatusOnlyMove) {
+    const blockingStatus =
+      params.effect.status.kind === 'major-status'
+        ? targetPokemon.majorStatus?.kind
+        : targetPokemon.volatileStatuses.find(
+            (status) => status.kind === params.effect.status.status,
+          )?.kind;
+    if (!blockingStatus) {
+      throw new Error('Expected an existing blocking status.');
+    }
+
     params.context.events.push({
       type: 'attack.already_affected',
       playerId: params.context.attackerAction.playerId,
@@ -37,6 +47,7 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
       pokemonName: params.context.attacker.name,
       targetPokemonName: targetPokemon.name,
       status: appliedStatusKind,
+      blockingStatus,
       moveName: params.context.move.name,
     });
     return;
@@ -52,12 +63,16 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
   }
 
   if (params.effect.status.kind === 'major-status') {
-    targetPokemon.majorStatus = params.effect.status.status;
+    const appliedStatus = createMajorStatus(
+      params.effect.status.status,
+      params.context.random,
+    );
+    targetPokemon.majorStatus = appliedStatus;
     params.context.events.push({
       type: 'pokemon.major_status_changed',
       playerId: targetPlayerId,
       pokemonName: targetPokemon.name,
-      status: params.effect.status.status,
+      status: appliedStatus,
       active: true,
       sourcePlayerId: params.context.attackerAction.playerId,
       moveName: params.context.move.name,

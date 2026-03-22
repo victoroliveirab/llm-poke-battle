@@ -27,10 +27,12 @@ describe('move: Ice Beam', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === true,
       ),
     ).toBe(true);
-    expect(fixture.getActivePokemon('player-two').majorStatus).toBe('freeze');
+    expect(fixture.getActivePokemon('player-two').majorStatus).toEqual({
+      kind: 'freeze',
+    });
   });
 });

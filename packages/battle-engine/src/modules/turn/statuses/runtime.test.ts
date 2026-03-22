@@ -55,7 +55,7 @@ function createStatusContext(): StatusContext {
 describe('status runtime', () => {
   it('safely skips statuses that have no registered handlers', () => {
     const context = createMoveStatusContext();
-    context.attacker.majorStatus = 'burn';
+    context.attacker.majorStatus = { kind: 'burn' };
     context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
 
     expect(
@@ -77,7 +77,7 @@ describe('status runtime', () => {
 
   it('runs handlers in deterministic major-then-volatile order', () => {
     const context = createMoveStatusContext();
-    context.attacker.majorStatus = 'burn';
+    context.attacker.majorStatus = { kind: 'burn' };
     context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 3 }];
     const calls: string[] = [];
 
@@ -112,7 +112,7 @@ describe('status runtime', () => {
 
   it('allows a beforeMove hook to block the action', () => {
     const context = createMoveStatusContext();
-    context.attacker.majorStatus = 'freeze';
+    context.attacker.majorStatus = { kind: 'freeze' };
     let laterHandlerCalled = false;
 
     const registry = {
@@ -143,7 +143,7 @@ describe('status runtime', () => {
 
   it('allows modifyDamage hooks to change the computed damage', () => {
     const context = createMoveStatusContext();
-    context.attacker.majorStatus = 'burn';
+    context.attacker.majorStatus = { kind: 'burn' };
 
     const registry = {
       burn: {
@@ -165,7 +165,7 @@ describe('status runtime', () => {
 
   it('applies multiple modifyDamage hooks in deterministic major-then-volatile order', () => {
     const context = createMoveStatusContext();
-    context.attacker.majorStatus = 'burn';
+    context.attacker.majorStatus = { kind: 'burn' };
     context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
     const calls: string[] = [];
 
@@ -198,10 +198,10 @@ describe('status runtime', () => {
   it('runs afterMove and endTurn hooks in deterministic major-then-volatile order', () => {
     const moveContext = createMoveStatusContext();
     const statusContext = createStatusContext();
-    moveContext.attacker.majorStatus = 'burn';
+    moveContext.attacker.majorStatus = { kind: 'burn' };
     moveContext.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
     const statusPokemon = getActivePokemon(statusContext.simulatedParties, PLAYER_ONE_ID);
-    statusPokemon.majorStatus = 'burn';
+    statusPokemon.majorStatus = { kind: 'burn' };
     statusPokemon.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
     const calls: string[] = [];
 

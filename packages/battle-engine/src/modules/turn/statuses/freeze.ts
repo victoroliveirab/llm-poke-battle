@@ -10,7 +10,9 @@ export const freezeStatusHandler: StatusHandler = {
         type: 'pokemon.major_status_changed',
         playerId: ctx.playerId,
         pokemonName: ctx.attacker.name,
-        status: 'freeze',
+        status: {
+          kind: 'freeze',
+        },
         active: false,
         sourcePlayerId: ctx.playerId,
         moveName: ctx.move.name,

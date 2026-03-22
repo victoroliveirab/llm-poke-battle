@@ -14,7 +14,7 @@ describe('turn freeze status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'freeze';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'freeze' };
 
     const events = fixture.resolveAttackTurn('Strength', 'Sludge Bomb').events;
 
@@ -45,7 +45,7 @@ describe('turn freeze status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'freeze';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'freeze' };
 
     const result = fixture.resolveAttackTurn('Strength', 'Sludge Bomb');
 
@@ -54,7 +54,7 @@ describe('turn freeze status effect', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_ONE_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === false,
       ),
     ).toBe(true);
@@ -77,7 +77,7 @@ describe('turn freeze status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'freeze';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'freeze' };
 
     const result = fixture.resolveActions(
       fixture.switchPokemon(PLAYER_ONE_ID, 'Raichu'),
@@ -91,11 +91,11 @@ describe('turn freeze status effect', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_ONE_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === false,
       ),
     ).toBe(false);
-    expect(switchedOutPokemon?.majorStatus).toBe('freeze');
+    expect(switchedOutPokemon?.majorStatus).toEqual({ kind: 'freeze' });
   });
 
   it('clears volatile statuses but keeps major status when switching out', () => {
@@ -108,7 +108,7 @@ describe('turn freeze status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'paralysis';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'paralysis' };
     fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses = [
       { kind: 'confusion', turnsRemaining: 2 },
     ];
@@ -120,7 +120,7 @@ describe('turn freeze status effect', () => {
     const party = fixture.simulatedParties.get(PLAYER_ONE_ID);
     const switchedOutPokemon = party?.find((pokemon) => pokemon.name === 'Charizard');
 
-    expect(switchedOutPokemon?.majorStatus).toBe('paralysis');
+    expect(switchedOutPokemon?.majorStatus).toEqual({ kind: 'paralysis' });
     expect(switchedOutPokemon?.volatileStatuses).toEqual([]);
   });
 
@@ -139,7 +139,7 @@ describe('turn freeze status effect', () => {
         0.05, // Player 2 freeze chance succeeds
       ],
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'freeze';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'freeze' };
 
     const result = fixture.resolveAttackTurn('Strength', 'Ice Beam');
 
@@ -148,7 +148,7 @@ describe('turn freeze status effect', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_ONE_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === false,
       ),
     ).toBe(true);
@@ -163,11 +163,13 @@ describe('turn freeze status effect', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_ONE_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === true,
       ),
     ).toBe(true);
-    expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toBe('freeze');
+    expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toEqual({
+      kind: 'freeze',
+    });
   });
 
   it('cannot get frozen again in the same turn when the frozen pokemon is slower', () => {
@@ -184,7 +186,7 @@ describe('turn freeze status effect', () => {
         0.5, // Player 1 damage random factor
       ],
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'freeze';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'freeze' };
 
     const result = fixture.resolveAttackTurn('Psychic', 'Ice Beam');
 
@@ -193,7 +195,7 @@ describe('turn freeze status effect', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_ONE_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === false,
       ),
     ).toBe(true);
@@ -202,7 +204,7 @@ describe('turn freeze status effect', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_ONE_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === true,
       ),
     ).toBe(false);

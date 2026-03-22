@@ -87,7 +87,9 @@ describe('turn battle integration', () => {
         type: 'pokemon.major_status_changed',
         playerId: 'player-one',
         pokemonName: 'Charizard',
-        status: 'paralysis',
+        status: {
+          kind: 'paralysis',
+        },
         active: true,
         sourcePlayerId: 'player-two',
         moveName: 'Stun Spore',
@@ -118,7 +120,7 @@ describe('turn battle integration', () => {
       throw new Error('Expected an active Pokemon in player state.');
     }
 
-    expect(activePokemon.majorStatus).toBe('paralysis');
+    expect(activePokemon.majorStatus).toEqual({ kind: 'paralysis' });
     expect(activePokemon.volatileStatuses).toEqual([
       { kind: 'confusion' },
     ]);

@@ -1,6 +1,20 @@
-export type MajorStatusKind = 'paralysis' | 'burn' | 'freeze';
+export type MajorStatusKind = 'paralysis' | 'burn' | 'freeze' | 'sleep';
 
-export type MajorStatus = MajorStatusKind | null;
+export type MajorStatus =
+  | null
+  | {
+      kind: 'paralysis';
+    }
+  | {
+      kind: 'burn';
+    }
+  | {
+      kind: 'freeze';
+    }
+  | {
+      kind: 'sleep';
+      turnsRemaining: number;
+    };
 
 export type VolatileStatus =
   | {
@@ -10,12 +24,14 @@ export type VolatileStatus =
 
 const CONFUSION_MIN_DURATION = 1;
 const CONFUSION_MAX_DURATION = 4;
+const SLEEP_MIN_DURATION = 1;
+const SLEEP_MAX_DURATION = 4;
 
 export type VolatileStatusKind = VolatileStatus['kind'];
 
 export type StatusKind = MajorStatusKind | VolatileStatusKind;
 
-export type AppliedStatus = MajorStatusKind | VolatileStatus;
+export type AppliedStatus = Exclude<MajorStatus, null> | VolatileStatus;
 
 export type StatusState = {
   majorStatus: MajorStatus;
@@ -26,7 +42,7 @@ export function hasMajorStatus(
   pokemon: Pick<StatusState, 'majorStatus'>,
   status: MajorStatusKind,
 ) {
-  return pokemon.majorStatus === status;
+  return pokemon.majorStatus?.kind === status;
 }
 
 export function hasVolatileStatus(
@@ -41,13 +57,26 @@ export function getStatusKind(status: AppliedStatus | StatusKind) {
 }
 
 export function isMajorStatusKind(status: StatusKind): status is MajorStatusKind {
-  return status === 'paralysis' || status === 'burn' || status === 'freeze';
+  return (
+    status === 'paralysis' ||
+    status === 'burn' ||
+    status === 'freeze' ||
+    status === 'sleep'
+  );
 }
 
 export function isVolatileStatusKind(
   status: StatusKind,
 ): status is VolatileStatusKind {
   return status === 'confusion';
+}
+
+export function cloneMajorStatus(status: MajorStatus): MajorStatus {
+  if (status === null) {
+    return null;
+  }
+
+  return { ...status };
 }
 
 export function cloneVolatileStatus(status: VolatileStatus): VolatileStatus {
@@ -72,6 +101,27 @@ export function createVolatileStatus(
           Math.floor(
             random() * (CONFUSION_MAX_DURATION - CONFUSION_MIN_DURATION + 1),
           ) + CONFUSION_MIN_DURATION,
+      };
+  }
+}
+
+export function createMajorStatus(
+  kind: MajorStatusKind,
+  random: () => number,
+): Exclude<MajorStatus, null> {
+  switch (kind) {
+    case 'paralysis':
+      return { kind: 'paralysis' };
+    case 'burn':
+      return { kind: 'burn' };
+    case 'freeze':
+      return { kind: 'freeze' };
+    case 'sleep':
+      return {
+        kind: 'sleep',
+        turnsRemaining:
+          Math.floor(random() * (SLEEP_MAX_DURATION - SLEEP_MIN_DURATION + 1)) +
+          SLEEP_MIN_DURATION,
       };
   }
 }

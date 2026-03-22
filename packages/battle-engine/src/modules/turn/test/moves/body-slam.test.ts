@@ -27,11 +27,13 @@ describe('move: Body Slam', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
-          event.status === 'paralysis' &&
+          event.status.kind === 'paralysis' &&
           event.active === true,
       ),
     ).toBe(true);
-    expect(fixture.getActivePokemon('player-two').majorStatus).toBe('paralysis');
+    expect(fixture.getActivePokemon('player-two').majorStatus).toEqual({
+      kind: 'paralysis',
+    });
   });
 
   it('does not apply paralysis when Body Slam knocks out the target', () => {
@@ -59,7 +61,7 @@ describe('move: Body Slam', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
-          event.status === 'paralysis',
+          event.status.kind === 'paralysis',
       ),
     ).toBe(false);
     expect(
@@ -79,7 +81,7 @@ describe('move: Body Slam', () => {
         0.5, // damage random factor
       ],
     });
-    fixture.setActivePokemonMajorStatus('player-two', 'paralysis');
+    fixture.setActivePokemonMajorStatus('player-two', { kind: 'paralysis' });
 
     const { events } = fixture.execute('Body Slam', 'Sludge Bomb');
 
@@ -101,7 +103,7 @@ describe('move: Body Slam', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
-          event.status === 'paralysis',
+          event.status.kind === 'paralysis',
       ),
     ).toBe(false);
   });

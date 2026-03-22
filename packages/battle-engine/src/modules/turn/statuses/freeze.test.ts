@@ -12,7 +12,7 @@ function createMoveStatusContext(randomValue: number): MoveStatusContext {
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
 
-  attacker.majorStatus = 'freeze';
+  attacker.majorStatus = { kind: 'freeze' };
 
   return {
     simulatedParties,
@@ -44,7 +44,9 @@ describe('freeze status handler', () => {
         type: 'pokemon.major_status_changed',
         playerId: PLAYER_ONE_ID,
         pokemonName: 'Charizard',
-        status: 'freeze',
+        status: {
+          kind: 'freeze',
+        },
         active: false,
         sourcePlayerId: PLAYER_ONE_ID,
         moveName: 'Strength',

@@ -226,14 +226,6 @@
           "class": "special"
         },
         {
-          "name": "Stomp",
-          "power": 65,
-          "accuracy": 100,
-          "pp": 20,
-          "type": "normal",
-          "class": "physical"
-        },
-        {
           "name": "Sludge Bomb",
           "power": 90,
           "accuracy": 100,
@@ -253,6 +245,22 @@
               "target": "opponent",
               "kind": "major-status",
               "status": "paralysis",
+              "chance": 100
+            }
+          ]
+        },
+        {
+          "name": "Sleep Powder",
+          "power": 0,
+          "accuracy": 75,
+          "pp": 15,
+          "type": "grass",
+          "class": "physical",
+          "statusEffects": [
+            {
+              "target": "opponent",
+              "kind": "major-status",
+              "status": "sleep",
               "chance": 100
             }
           ]

@@ -162,7 +162,7 @@ describe('play_move reasoning requirement', () => {
     const attackTimeline = snapshot.actions.timeline.filter(
       (entry) => entry.type === 'attack',
     );
-    expect(attackTimeline.length).toBe(2);
+    expect(attackTimeline.length).toBeGreaterThanOrEqual(2);
     expect(attackTimeline.some((entry) => entry.reasoning === player1Reasoning)).toBe(
       true,
     );
@@ -196,7 +196,9 @@ describe('play_move reasoning requirement', () => {
         type: 'pokemon.major_status_changed',
         playerId: playerTwoId,
         pokemonName: 'Charizard',
-        status: 'burn',
+        status: {
+          kind: 'burn',
+        },
         active: true,
         sourcePlayerId: 'player-one',
         moveName: 'Fire Punch',

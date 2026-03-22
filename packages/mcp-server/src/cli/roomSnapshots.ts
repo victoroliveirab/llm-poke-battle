@@ -105,6 +105,7 @@ type TurnActionTimelineEntrySnapshot =
         | 'miss'
         | 'not_executed'
         | 'paralyzed'
+        | 'asleep'
         | 'confused'
         | 'frozen'
         | 'already_affected'
@@ -128,7 +129,7 @@ type TurnActionTimelineEntrySnapshot =
       playerId: string;
       publicName: string;
       pokemonName: string;
-      status: Exclude<MajorStatus, null>;
+      status: Exclude<MajorStatus, null> | StatusKind;
       damage: number;
     }
   | {
@@ -504,6 +505,12 @@ function printTurnActions(actions: TurnActionsSnapshot) {
           );
           continue;
         }
+        if (entry.outcome === 'asleep') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> did not execute - asleep | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
         if (entry.outcome === 'confused') {
           console.log(
             `${entry.publicName}: attack ${entry.attackName} -> hurt itself in confusion for ${entry.damage} damage | reason: ${entry.reasoning}`,
@@ -665,7 +672,11 @@ function formatPokemonStatuses(pokemon: SnapshotPokemon) {
   const statuses: string[] = [];
 
   if (pokemon.majorStatus !== null) {
-    statuses.push(formatStatusAdjective(pokemon.majorStatus));
+    if (pokemon.majorStatus.kind === 'sleep') {
+      statuses.push(`asleep (${pokemon.majorStatus.turnsRemaining} turns left)`);
+    } else {
+      statuses.push(formatStatusAdjective(pokemon.majorStatus));
+    }
   }
 
   for (const status of pokemon.volatileStatuses) {
@@ -680,17 +691,30 @@ function formatPokemonStatuses(pokemon: SnapshotPokemon) {
   return statuses.length > 0 ? statuses.join(', ') : 'none';
 }
 
-function formatStatusAdjective(status: StatusKind | undefined) {
-  if (status === 'paralysis') {
+function getStatusKind(status: MajorStatus | StatusKind | undefined) {
+  if (!status) {
+    return undefined;
+  }
+
+  return typeof status === 'string' ? status : status.kind;
+}
+
+function formatStatusAdjective(status: MajorStatus | StatusKind | undefined) {
+  const kind = getStatusKind(status);
+
+  if (kind === 'paralysis') {
     return 'paralyzed';
   }
-  if (status === 'burn') {
+  if (kind === 'burn') {
     return 'burned';
   }
-  if (status === 'freeze') {
+  if (kind === 'freeze') {
     return 'frozen';
   }
-  if (status === 'confusion') {
+  if (kind === 'sleep') {
+    return 'asleep';
+  }
+  if (kind === 'confusion') {
     return 'confused';
   }
   return 'affected';
@@ -705,15 +729,20 @@ function formatStatusChange(status: StatusKind | undefined, active: boolean | un
   return active ? `is now ${adjective}` : `is no longer ${adjective}`;
 }
 
-function formatStatusNoun(status: Exclude<MajorStatus, null>) {
-  if (status === 'paralysis') {
+function formatStatusNoun(status: Exclude<MajorStatus, null> | StatusKind) {
+  const kind = getStatusKind(status);
+
+  if (kind === 'paralysis') {
     return 'paralysis';
   }
-  if (status === 'burn') {
+  if (kind === 'burn') {
     return 'burn';
   }
-  if (status === 'freeze') {
+  if (kind === 'freeze') {
     return 'freeze';
+  }
+  if (kind === 'sleep') {
+    return 'sleep';
   }
   return 'status';
 }

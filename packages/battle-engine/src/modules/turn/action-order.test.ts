@@ -71,7 +71,7 @@ describe('turn action order', () => {
       playerOneAction,
       playerTwoAction,
       buildActivePokemon({
-        majorStatus: 'paralysis',
+        majorStatus: { kind: 'paralysis' },
         stats: {
           attack: 100,
           defense: 100,

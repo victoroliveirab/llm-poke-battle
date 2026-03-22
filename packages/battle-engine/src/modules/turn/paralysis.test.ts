@@ -18,7 +18,7 @@ describe('turn paralysis status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, 'paralysis');
+    fixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, { kind: 'paralysis' });
 
     const events = fixture.resolveAttackTurn('Strength', 'Sludge Bomb').events;
 
@@ -50,7 +50,7 @@ describe('turn paralysis status effect', () => {
         0, // Player 2 damage random factor
       ],
     });
-    fixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, 'paralysis');
+    fixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, { kind: 'paralysis' });
 
     const events = fixture.resolveAttackTurn('Strength', 'Sludge Bomb').events;
 
@@ -84,7 +84,9 @@ describe('turn paralysis status effect', () => {
 
     const events = fixture.resolveAttackTurn('Body Slam', 'Sludge Bomb').events;
 
-    expect(fixture.getActivePokemon(PLAYER_TWO_ID).majorStatus).toBe('paralysis');
+    expect(fixture.getActivePokemon(PLAYER_TWO_ID).majorStatus).toEqual({
+      kind: 'paralysis',
+    });
     expect(
       events.some(
         (event) =>
@@ -142,7 +144,9 @@ describe('turn paralysis status effect', () => {
     });
     paralysisFixture.setActivePokemonHealth(PLAYER_ONE_ID, 1);
     paralysisFixture.setActivePokemonHealth(PLAYER_TWO_ID, 1);
-    paralysisFixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, 'paralysis');
+    paralysisFixture.setActivePokemonMajorStatus(PLAYER_ONE_ID, {
+      kind: 'paralysis',
+    });
 
     const paralysisTurn = paralysisFixture.resolveAttackTurn('Strength', 'Drill Peck');
     expect(

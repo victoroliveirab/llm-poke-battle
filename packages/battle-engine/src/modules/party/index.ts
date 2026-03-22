@@ -92,7 +92,13 @@ export class PartyModule implements EngineModule {
         return [];
       }
 
-      party.clearStatus(event.pokemonName, event.status);
+      party.clearStatus(event.pokemonName, event.status.kind);
+      return [];
+    }
+
+    if (event.type === 'pokemon.major_status_updated') {
+      const party = this.getPartyObject(event.playerId);
+      party.setMajorStatus(event.pokemonName, event.status);
       return [];
     }
 

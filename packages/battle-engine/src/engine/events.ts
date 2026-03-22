@@ -1,5 +1,6 @@
 import { Action } from '../types';
 import {
+  MajorStatus,
   MajorStatusKind,
   StatusKind,
   VolatileStatus,
@@ -47,6 +48,7 @@ export type DomainEvent =
       pokemonName: string;
       targetPokemonName: string;
       status: StatusKind;
+      blockingStatus: StatusKind;
       moveName: string;
     }
   | {
@@ -66,6 +68,14 @@ export type DomainEvent =
       moveName: string;
     }
   | {
+      type: 'attack.asleep';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      moveName: string;
+    }
+  | {
       type: 'attack.confused';
       playerId: string;
       targetPlayerId: string;
@@ -78,7 +88,16 @@ export type DomainEvent =
       type: 'pokemon.major_status_changed';
       playerId: string;
       pokemonName: string;
-      status: MajorStatusKind;
+      status: Exclude<MajorStatus, null>;
+      active: boolean;
+      sourcePlayerId: string;
+      moveName: string;
+    }
+  | {
+      type: 'pokemon.major_status_updated';
+      playerId: string;
+      pokemonName: string;
+      status: Exclude<MajorStatus, null>;
       active: boolean;
       sourcePlayerId: string;
       moveName: string;

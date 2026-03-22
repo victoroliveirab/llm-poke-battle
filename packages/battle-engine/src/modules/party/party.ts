@@ -1,7 +1,9 @@
 import { PokemonSpecies } from '../species';
 import {
   clearVolatileStatuses,
+  cloneMajorStatus,
   cloneVolatileStatus,
+  MajorStatus,
   MajorStatusKind,
   StatusKind,
   StatusState,
@@ -78,6 +80,7 @@ export class Party {
   all() {
     return this.pokemon.map((entry) => ({
       ...entry,
+      majorStatus: cloneMajorStatus(entry.majorStatus),
       moves: entry.moves.map((move) => ({ ...move })),
       stats: { ...entry.stats },
       volatileStatuses: entry.volatileStatuses.map(cloneVolatileStatus),
@@ -155,7 +158,7 @@ export class Party {
     return nextStage;
   }
 
-  applyMajorStatus(pokemonName: string, status: MajorStatusKind) {
+  applyMajorStatus(pokemonName: string, status: Exclude<MajorStatus, null>) {
     const pokemon = this.getPokemonByName(pokemonName);
     if (!pokemon) {
       throw new Error(`Pokemon ${pokemonName} not found in party.`);
@@ -165,7 +168,17 @@ export class Party {
       return false;
     }
 
-    pokemon.majorStatus = status;
+    pokemon.majorStatus = cloneMajorStatus(status);
+    return true;
+  }
+
+  setMajorStatus(pokemonName: string, status: Exclude<MajorStatus, null>) {
+    const pokemon = this.getPokemonByName(pokemonName);
+    if (!pokemon) {
+      throw new Error(`Pokemon ${pokemonName} not found in party.`);
+    }
+
+    pokemon.majorStatus = cloneMajorStatus(status);
     return true;
   }
 
@@ -209,7 +222,7 @@ export class Party {
       throw new Error(`Pokemon ${pokemonName} not found in party.`);
     }
 
-    if (pokemon.majorStatus === status) {
+    if (pokemon.majorStatus?.kind === status) {
       pokemon.majorStatus = null;
       return true;
     }

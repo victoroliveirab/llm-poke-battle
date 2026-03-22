@@ -103,7 +103,7 @@ describe('turn resolver', () => {
     if (!playerTwoParty) {
       throw new Error('Expected player two party in resolver fixture.');
     }
-    playerTwoParty[0].majorStatus = 'burn';
+    playerTwoParty[0].majorStatus = { kind: 'burn' };
     playerTwoParty[0].health = 1;
     for (const benchedPokemon of playerTwoParty.slice(1)) {
       benchedPokemon.health = 0;
@@ -128,7 +128,7 @@ describe('turn resolver', () => {
       ],
     });
     const burnedPokemon = fixture.getActivePokemon(PLAYER_TWO_ID);
-    burnedPokemon.majorStatus = 'burn';
+    burnedPokemon.majorStatus = { kind: 'burn' };
     const initialHealth = burnedPokemon.health;
     const expectedBurnDamage = Math.floor(burnedPokemon.stats.hp / 8);
 
@@ -163,7 +163,7 @@ describe('turn resolver', () => {
     if (!playerTwoParty) {
       throw new Error('Expected player two party in resolver fixture.');
     }
-    playerTwoParty[0].majorStatus = 'burn';
+    playerTwoParty[0].majorStatus = { kind: 'burn' };
     playerTwoParty[0].health = 1;
     for (const benchedPokemon of playerTwoParty.slice(1)) {
       benchedPokemon.health = 0;

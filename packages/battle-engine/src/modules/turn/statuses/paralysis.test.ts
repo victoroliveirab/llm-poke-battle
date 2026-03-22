@@ -12,7 +12,7 @@ function createMoveStatusContext(randomValue: number): MoveStatusContext {
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
 
-  attacker.majorStatus = 'paralysis';
+  attacker.majorStatus = { kind: 'paralysis' };
 
   return {
     simulatedParties,

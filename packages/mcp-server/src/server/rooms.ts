@@ -127,6 +127,7 @@ export type TurnActionTimelineEntrySnapshot =
         | 'miss'
         | 'not_executed'
         | 'paralyzed'
+        | 'asleep'
         | 'confused'
         | 'frozen'
         | 'already_affected'
@@ -150,7 +151,7 @@ export type TurnActionTimelineEntrySnapshot =
       playerId: string;
       publicName: string;
       pokemonName: string;
-      status: Exclude<MajorStatus, null>;
+      status: Exclude<MajorStatus, null> | StatusKind;
       damage: number;
     }
   | {
@@ -799,7 +800,7 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: 0,
           outcome: 'already_affected',
-          status: event.status,
+          status: event.blockingStatus,
           critical: false,
           reasoning,
         });
@@ -834,6 +835,40 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: 0,
           outcome: 'paralyzed',
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.asleep') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: 0,
+        executed: false,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: 0,
+          outcome: 'asleep',
           critical: false,
           reasoning,
         });
@@ -936,7 +971,7 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.pokemonName,
           damage: 0,
           outcome: 'status',
-          status: event.status,
+          status: event.status.kind,
           active: event.active,
           critical: false,
           reasoning,

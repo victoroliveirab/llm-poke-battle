@@ -12,7 +12,7 @@ function createMoveStatusContext(moveClass: 'physical' | 'special'): MoveStatusC
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
 
-  attacker.majorStatus = 'burn';
+  attacker.majorStatus = { kind: 'burn' };
 
   return {
     simulatedParties,
@@ -39,7 +39,7 @@ function createStatusContext(): StatusContext {
     [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
   ]);
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
-  attacker.majorStatus = 'burn';
+  attacker.majorStatus = { kind: 'burn' };
 
   return {
     simulatedParties,

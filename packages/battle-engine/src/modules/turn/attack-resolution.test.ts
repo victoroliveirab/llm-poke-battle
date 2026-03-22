@@ -170,7 +170,7 @@ describe('turn attack resolution', () => {
         },
       } satisfies StatusHandlerRegistry,
     });
-    modifiedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'burn';
+    modifiedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'burn' };
     const defender = modifiedFixture.getActivePokemon('player-two');
     const initialHealth = defender.health;
 
@@ -195,7 +195,7 @@ describe('turn attack resolution', () => {
     const burnedFixture = createMoveFixture({
       randomSequence: [0, 0.9, 0],
     });
-    burnedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'burn';
+    burnedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'burn' };
     const burnedDamage = getDamageAppliedEvent(
       burnedFixture.execute('Strength', 'Sludge Bomb').events,
       PLAYER_ONE_ID,
@@ -263,7 +263,7 @@ describe('turn attack resolution', () => {
         },
       } satisfies StatusHandlerRegistry,
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'burn';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'burn' };
 
     fixture.execute('Rock Slide', 'Sludge Bomb');
 
@@ -287,7 +287,7 @@ describe('turn attack resolution', () => {
         },
       } satisfies StatusHandlerRegistry,
     });
-    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = 'paralysis';
+    fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'paralysis' };
 
     fixture.execute('Rock Slide', 'Sludge Bomb');
 

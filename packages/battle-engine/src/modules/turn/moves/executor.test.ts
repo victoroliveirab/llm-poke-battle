@@ -22,7 +22,7 @@ describe('move executor', () => {
       events.some(
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
-          event.status === 'paralysis',
+          event.status.kind === 'paralysis',
       ),
     ).toBe(false);
   });
@@ -35,7 +35,7 @@ describe('move executor', () => {
         0, // Stun Spore accuracy
       ],
     });
-    fixture.setActivePokemonMajorStatus('player-two', 'paralysis');
+    fixture.setActivePokemonMajorStatus('player-two', { kind: 'paralysis' });
 
     const { events } = fixture.execute('Stun Spore', 'Sludge Bomb');
 

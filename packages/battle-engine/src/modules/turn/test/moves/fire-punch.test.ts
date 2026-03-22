@@ -27,10 +27,12 @@ describe('move: Fire Punch', () => {
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === 'player-two' &&
-          event.status === 'burn' &&
+          event.status.kind === 'burn' &&
           event.active === true,
       ),
     ).toBe(true);
-    expect(fixture.getActivePokemon('player-two').majorStatus).toBe('burn');
+    expect(fixture.getActivePokemon('player-two').majorStatus).toEqual({
+      kind: 'burn',
+    });
   });
 });

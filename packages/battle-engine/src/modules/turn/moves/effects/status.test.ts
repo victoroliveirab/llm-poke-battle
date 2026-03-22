@@ -26,13 +26,13 @@ describe('applyStatusEffect', () => {
       context: burnContext,
     });
 
-    expect(burnContext.defender.majorStatus).toBe('burn');
+    expect(burnContext.defender.majorStatus).toEqual({ kind: 'burn' });
     expect(
       burnContext.events.some(
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_TWO_ID &&
-          event.status === 'burn' &&
+          event.status.kind === 'burn' &&
           event.active === true,
       ),
     ).toBe(true);
@@ -52,13 +52,13 @@ describe('applyStatusEffect', () => {
       context: freezeContext,
     });
 
-    expect(freezeContext.defender.majorStatus).toBe('freeze');
+    expect(freezeContext.defender.majorStatus).toEqual({ kind: 'freeze' });
     expect(
       freezeContext.events.some(
         (event) =>
           event.type === 'pokemon.major_status_changed' &&
           event.playerId === PLAYER_TWO_ID &&
-          event.status === 'freeze' &&
+          event.status.kind === 'freeze' &&
           event.active === true,
       ),
     ).toBe(true);
@@ -101,7 +101,7 @@ describe('applyStatusEffect', () => {
 
   it('keeps already-affected logic for major status-only moves', () => {
     const context = createContext([0]);
-    context.defender.majorStatus = 'paralysis';
+    context.defender.majorStatus = { kind: 'paralysis' };
 
     applyStatusEffect({
       effect: {
@@ -123,7 +123,84 @@ describe('applyStatusEffect', () => {
           event.type === 'attack.already_affected' &&
           event.playerId === PLAYER_ONE_ID &&
           event.targetPlayerId === PLAYER_TWO_ID &&
-          event.status === 'paralysis',
+          event.status === 'paralysis' &&
+          event.blockingStatus === 'paralysis',
+      ),
+    ).toBe(true);
+    expect(
+      context.events.some(
+        (event) => event.type === 'pokemon.major_status_changed',
+      ),
+    ).toBe(false);
+  });
+
+  it('samples sleep duration between 1 and 4 turns inclusive', () => {
+    const shortestContext = createContext([0, 0]);
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'sleep',
+        },
+      },
+      isStatusOnlyMove: true,
+      context: shortestContext,
+    });
+
+    const longestContext = createContext([0, 0.99]);
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'sleep',
+        },
+      },
+      isStatusOnlyMove: true,
+      context: longestContext,
+    });
+
+    expect(shortestContext.defender.majorStatus).toEqual({
+      kind: 'sleep',
+      turnsRemaining: 1,
+    });
+    expect(longestContext.defender.majorStatus).toEqual({
+      kind: 'sleep',
+      turnsRemaining: 4,
+    });
+  });
+
+  it('emits already_affected when a status-only sleep move targets another major status', () => {
+    const context = createContext([0]);
+    context.defender.majorStatus = { kind: 'burn' };
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'sleep',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(
+      context.events.some(
+        (event) =>
+          event.type === 'attack.already_affected' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.targetPlayerId === PLAYER_TWO_ID &&
+          event.status === 'sleep' &&
+          event.blockingStatus === 'burn',
       ),
     ).toBe(true);
     expect(

@@ -24,16 +24,20 @@ describe('party status state', () => {
   it('applies a major status', () => {
     const party = createParty();
 
-    expect(party.applyMajorStatus('Charizard', 'paralysis')).toBe(true);
-    expect(party.getPokemonByName('Charizard')?.majorStatus).toBe('paralysis');
+    expect(party.applyMajorStatus('Charizard', { kind: 'paralysis' })).toBe(true);
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'paralysis',
+    });
   });
 
   it('refuses a second incompatible major status', () => {
     const party = createParty();
-    party.applyMajorStatus('Charizard', 'paralysis');
+    party.applyMajorStatus('Charizard', { kind: 'paralysis' });
 
-    expect(party.applyMajorStatus('Charizard', 'burn')).toBe(false);
-    expect(party.getPokemonByName('Charizard')?.majorStatus).toBe('paralysis');
+    expect(party.applyMajorStatus('Charizard', { kind: 'burn' })).toBe(false);
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'paralysis',
+    });
   });
 
   it('adds a volatile status', () => {
@@ -81,7 +85,7 @@ describe('party status state', () => {
 
   it('clears volatile statuses but keeps major status when switching out', () => {
     const party = createParty();
-    party.applyMajorStatus('Charizard', 'paralysis');
+    party.applyMajorStatus('Charizard', { kind: 'paralysis' });
     party.applyVolatileStatus('Charizard', {
       kind: 'confusion',
       turnsRemaining: 2,
@@ -89,7 +93,30 @@ describe('party status state', () => {
 
     party.putPokemonInFront('Raichu');
 
-    expect(party.getPokemonByName('Charizard')?.majorStatus).toBe('paralysis');
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'paralysis',
+    });
     expect(party.getPokemonByName('Charizard')?.volatileStatuses).toEqual([]);
+  });
+
+  it('clones major status state when reading the full party', () => {
+    const party = createParty();
+    party.applyMajorStatus('Charizard', {
+      kind: 'sleep',
+      turnsRemaining: 3,
+    });
+
+    const snapshot = party.all();
+    const active = snapshot[0];
+    if (!active || active.majorStatus === null || active.majorStatus.kind !== 'sleep') {
+      throw new Error('Expected Charizard to be asleep in the snapshot.');
+    }
+
+    active.majorStatus.turnsRemaining = 1;
+
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'sleep',
+      turnsRemaining: 3,
+    });
   });
 });

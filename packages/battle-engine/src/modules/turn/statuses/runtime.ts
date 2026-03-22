@@ -28,10 +28,10 @@ export function getStatusHandlers(
 
   // Major statuses always run before volatile ones so hook order stays deterministic.
   if (pokemon.majorStatus !== null) {
-    const majorHandler = registry[pokemon.majorStatus];
+    const majorHandler = registry[pokemon.majorStatus.kind];
     if (majorHandler) {
       registrations.push({
-        kind: pokemon.majorStatus,
+        kind: pokemon.majorStatus.kind,
         handler: majorHandler,
       });
     }
