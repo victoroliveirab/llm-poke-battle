@@ -5,7 +5,7 @@ import { PokemonSpecies } from '../../species';
 import { didAttackLand } from '../calculations/accuracy';
 import { getActivePokemon } from '../party-state';
 import { TurnAction } from '../types';
-import { fromSpeciesMove } from './from-species';
+import { fromPartyMove } from './from-party';
 import { applyDamageEffect } from './effects/damage';
 import { applyStageEffect } from './effects/stage';
 import { applyStatusEffect } from './effects/status';
@@ -60,14 +60,7 @@ export function executeMove(params: ExecuteMoveParams) {
 
   const attackerSpecies = params.getSpecies(attacker.name);
   const defenderSpecies = params.getSpecies(defender.name);
-  const speciesMove = attackerSpecies.moves.find((entry) => entry.name === moveName);
-  if (!speciesMove) {
-    throw new InvalidMoveError(
-      `Move ${moveName} not found for Pokemon ${attacker.name}.`,
-    );
-  }
-
-  const move = fromSpeciesMove(speciesMove);
+  const move = fromPartyMove(moveState);
   const statusHandlerRegistry =
     params.statusHandlerRegistry ?? defaultStatusHandlerRegistry;
   const statusContext = {

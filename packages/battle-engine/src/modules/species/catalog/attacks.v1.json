@@ -1,0 +1,290 @@
+{
+  "options": [
+    {
+      "id": "fire-punch",
+      "name": "Fire Punch",
+      "power": 75,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "fire",
+      "class": "physical",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "burn",
+          "chance": 10
+        }
+      ]
+    },
+    {
+      "id": "strength",
+      "name": "Strength",
+      "power": 80,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "normal",
+      "class": "physical"
+    },
+    {
+      "id": "earthquake",
+      "name": "Earthquake",
+      "power": 100,
+      "accuracy": 100,
+      "pp": 10,
+      "type": "ground",
+      "class": "physical"
+    },
+    {
+      "id": "rock-slide",
+      "name": "Rock Slide",
+      "power": 75,
+      "accuracy": 90,
+      "pp": 10,
+      "type": "rock",
+      "class": "physical"
+    },
+    {
+      "id": "slam",
+      "name": "Slam",
+      "power": 80,
+      "accuracy": 75,
+      "pp": 20,
+      "type": "normal",
+      "class": "physical"
+    },
+    {
+      "id": "surf",
+      "name": "Surf",
+      "power": 90,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "water",
+      "class": "special"
+    },
+    {
+      "id": "play-rough",
+      "name": "Play Rough",
+      "power": 90,
+      "accuracy": 90,
+      "pp": 10,
+      "type": "fairy",
+      "class": "physical"
+    },
+    {
+      "id": "thunderbolt",
+      "name": "Thunderbolt",
+      "power": 90,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "electric",
+      "class": "special"
+    },
+    {
+      "id": "sludge-bomb",
+      "name": "Sludge Bomb",
+      "power": 90,
+      "accuracy": 100,
+      "pp": 10,
+      "type": "poison",
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "poison",
+          "chance": 30
+        }
+      ]
+    },
+    {
+      "id": "body-slam",
+      "name": "Body Slam",
+      "power": 85,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "normal",
+      "class": "physical",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "paralysis",
+          "chance": 30
+        }
+      ]
+    },
+    {
+      "id": "horn-attack",
+      "name": "Horn Attack",
+      "power": 65,
+      "accuracy": 100,
+      "pp": 25,
+      "type": "normal",
+      "class": "physical"
+    },
+    {
+      "id": "ice-fang",
+      "name": "Ice Fang",
+      "power": 65,
+      "accuracy": 95,
+      "pp": 15,
+      "type": "ice",
+      "class": "physical"
+    },
+    {
+      "id": "aqua-tail",
+      "name": "Aqua Tail",
+      "power": 90,
+      "accuracy": 90,
+      "pp": 10,
+      "type": "water",
+      "class": "physical"
+    },
+    {
+      "id": "psychic",
+      "name": "Psychic",
+      "power": 90,
+      "accuracy": 100,
+      "pp": 10,
+      "type": "psychic",
+      "class": "special"
+    },
+    {
+      "id": "stun-spore",
+      "name": "Stun Spore",
+      "power": 0,
+      "accuracy": 75,
+      "pp": 10,
+      "type": "grass",
+      "class": "physical",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "paralysis",
+          "chance": 100
+        }
+      ]
+    },
+    {
+      "id": "sleep-powder",
+      "name": "Sleep Powder",
+      "power": 0,
+      "accuracy": 75,
+      "pp": 15,
+      "type": "grass",
+      "class": "physical",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "sleep",
+          "chance": 100
+        }
+      ]
+    },
+    {
+      "id": "drill-peck",
+      "name": "Drill Peck",
+      "power": 80,
+      "accuracy": 100,
+      "pp": 20,
+      "type": "flying",
+      "class": "physical"
+    },
+    {
+      "id": "drill-run",
+      "name": "Drill Run",
+      "power": 80,
+      "accuracy": 95,
+      "pp": 10,
+      "type": "ground",
+      "class": "physical"
+    },
+    {
+      "id": "return",
+      "name": "Return",
+      "power": 100,
+      "accuracy": 100,
+      "pp": 20,
+      "type": "normal",
+      "class": "physical"
+    },
+    {
+      "id": "sand-attack",
+      "name": "Sand Attack",
+      "power": 0,
+      "accuracy": 75,
+      "pp": 15,
+      "type": "ground",
+      "class": "physical",
+      "statChanges": [
+        {
+          "target": "opponent",
+          "stat": "accuracy",
+          "stages": -1
+        }
+      ]
+    },
+    {
+      "id": "ice-beam",
+      "name": "Ice Beam",
+      "power": 95,
+      "accuracy": 100,
+      "pp": 10,
+      "type": "ice",
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "freeze",
+          "chance": 10
+        }
+      ]
+    },
+    {
+      "id": "water-pulse",
+      "name": "Water Pulse",
+      "power": 60,
+      "accuracy": 100,
+      "pp": 20,
+      "type": "water",
+      "class": "special"
+    },
+    {
+      "id": "confuse-ray",
+      "name": "Confuse Ray",
+      "power": 0,
+      "accuracy": 100,
+      "pp": 10,
+      "type": "ghost",
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "volatile-status",
+          "status": "confusion",
+          "chance": 100
+        }
+      ]
+    },
+    {
+      "id": "growl",
+      "name": "Growl",
+      "power": 0,
+      "accuracy": 100,
+      "pp": 40,
+      "type": "normal",
+      "class": "special",
+      "statChanges": [
+        {
+          "target": "opponent",
+          "stat": "attack",
+          "stages": -1
+        }
+      ]
+    }
+  ]
+}

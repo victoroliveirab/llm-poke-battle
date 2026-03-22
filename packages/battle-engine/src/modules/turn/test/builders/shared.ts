@@ -1,6 +1,6 @@
 import { DomainEvent } from '../../../../engine/events';
 import { Party, PartyEntry } from '../../../party/party';
-import { PokemonSpecies } from '../../../species';
+import { AttackDefinition, PokemonSpecies } from '../../../species';
 import { DefaultLoader } from '../../../species/loader';
 import { getActivePokemon } from '../../party-state';
 import { TurnAction } from '../../types';
@@ -8,9 +8,13 @@ import { TurnAction } from '../../types';
 export const PLAYER_ONE_ID = 'player-one';
 export const PLAYER_TWO_ID = 'player-two';
 
-const speciesCatalog = new DefaultLoader().load();
+const catalog = new DefaultLoader().load();
+const speciesCatalog = catalog.species;
 const speciesByName = new Map<string, PokemonSpecies>(
   speciesCatalog.map((entry) => [entry.species, entry]),
+);
+const attacksById = new Map<string, AttackDefinition>(
+  catalog.attacks.map((entry) => [entry.id, entry]),
 );
 
 export function getSpecies(speciesName: string) {
@@ -24,6 +28,14 @@ export function getSpecies(speciesName: string) {
 
 export function buildPartyEntries(owner: string, pokemonNames: string[]) {
   return new Party({
+    getAttack: (attackId) => {
+      const attack = attacksById.get(attackId);
+      if (!attack) {
+        throw new Error(`Attack ${attackId} not found in test fixture catalog.`);
+      }
+
+      return attack;
+    },
     level: 50,
     pokemon: pokemonNames.map((name) => getSpecies(name)),
     owner,

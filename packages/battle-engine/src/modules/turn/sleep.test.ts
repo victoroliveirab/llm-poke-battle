@@ -58,6 +58,7 @@ describe('turn sleep status effect', () => {
         0.5, // Player 2 accuracy check
         0.9, // Player 2 crit check
         0, // Player 2 damage random factor
+        0.99, // Player 2 poison chance fails
       ],
     });
     fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = {

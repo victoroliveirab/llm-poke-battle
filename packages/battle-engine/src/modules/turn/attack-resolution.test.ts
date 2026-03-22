@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'bun:test';
+import { DomainEvent } from '../../engine/events';
+import { executeMove } from './moves/executor';
 import { createMoveFixture } from './test/builders/move-fixture';
 import {
+  buildAttackAction,
+  buildPartyEntries,
+  buildRandomSequence,
   getDamageAppliedEvent,
+  getSpecies,
   PLAYER_ONE_ID,
+  PLAYER_TWO_ID,
 } from './test/builders/shared';
 import { StatusHandlerRegistry } from './statuses/types';
 
@@ -181,6 +188,38 @@ describe('turn attack resolution', () => {
 
     expect(adjustedDamage).toBe(Math.floor(baselineDamage / 2));
     expect(defender.health).toBe(initialHealth - adjustedDamage);
+  });
+
+  it('executes moves from copied party state after party creation', () => {
+    const simulatedParties = new Map([
+      [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
+      [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Nidoking', 'Raichu', 'Charizard'])],
+    ]);
+    const events: DomainEvent[] = [];
+
+    executeMove({
+      attackerAction: buildAttackAction(PLAYER_ONE_ID, 'Strength'),
+      defenderAction: buildAttackAction(PLAYER_TWO_ID, 'Sludge Bomb'),
+      events,
+      getSpecies: (speciesName) => {
+        const species = getSpecies(speciesName);
+        return {
+          ...species,
+          moves: [],
+        };
+      },
+      random: buildRandomSequence([0, 0.9, 0]),
+      simulatedParties,
+    });
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID &&
+          event.moveName === 'Strength',
+      ),
+    ).toBe(true);
   });
 
   it('reduces physical damage when the attacker is burned', () => {

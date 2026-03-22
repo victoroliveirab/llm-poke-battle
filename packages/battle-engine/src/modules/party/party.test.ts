@@ -3,11 +3,19 @@ import { DefaultLoader } from '../species/loader';
 import { Party } from './party';
 
 function createParty() {
-  const species = new Map(
-    new DefaultLoader().load().map((entry) => [entry.species, entry]),
-  );
+  const catalog = new DefaultLoader().load();
+  const species = new Map(catalog.species.map((entry) => [entry.species, entry]));
+  const attacks = new Map(catalog.attacks.map((entry) => [entry.id, entry]));
 
   return new Party({
+    getAttack: (attackId) => {
+      const attack = attacks.get(attackId);
+      if (!attack) {
+        throw new Error(`Attack ${attackId} not found in test loader.`);
+      }
+
+      return attack;
+    },
     level: 50,
     owner: 'player-one',
     pokemon: ['Charizard', 'Raichu', 'Nidoking'].map((name) => {
@@ -21,6 +29,32 @@ function createParty() {
 }
 
 describe('party status state', () => {
+  it('copies attack catalog data into party move state on construction', () => {
+    const party = createParty();
+    const charizard = party.getPokemonByName('Charizard');
+    const firePunch = charizard?.moves.find((move) => move.name === 'Fire Punch');
+
+    expect(firePunch).toEqual({
+      accuracy: 100,
+      class: 'physical',
+      id: 'fire-punch',
+      maxPP: 15,
+      name: 'Fire Punch',
+      power: 75,
+      remaining: 15,
+      statusEffects: [
+        {
+          chance: 10,
+          kind: 'major-status',
+          status: 'burn',
+          target: 'opponent',
+        },
+      ],
+      type: 'fire',
+      used: 0,
+    });
+  });
+
   it('applies a major status', () => {
     const party = createParty();
 

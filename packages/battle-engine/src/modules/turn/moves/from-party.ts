@@ -1,7 +1,8 @@
-import { PokemonMove, PokemonStatusEffect } from '../../species';
+import { PartyMove } from '../../party/party';
+import { AttackStatusEffect } from '../../species';
 import { MoveDefinition, MoveEffect } from './types';
 
-export function fromSpeciesMove(move: PokemonMove): MoveDefinition {
+export function fromPartyMove(move: PartyMove): MoveDefinition {
   const effects: MoveEffect[] = [];
 
   for (const stageChange of move.statChanges ?? []) {
@@ -18,7 +19,7 @@ export function fromSpeciesMove(move: PokemonMove): MoveDefinition {
   }
 
   for (const statusEffect of move.statusEffects ?? []) {
-    effects.push(fromSpeciesStatusEffect(statusEffect));
+    effects.push(fromAttackStatusEffect(statusEffect));
   }
 
   return {
@@ -31,8 +32,8 @@ export function fromSpeciesMove(move: PokemonMove): MoveDefinition {
   };
 }
 
-function fromSpeciesStatusEffect(
-  statusEffect: PokemonStatusEffect,
+function fromAttackStatusEffect(
+  statusEffect: AttackStatusEffect,
 ): Extract<MoveEffect, { kind: 'apply-status' }> {
   if (statusEffect.kind === 'volatile-status') {
     return {

@@ -42,6 +42,7 @@ export class PartyModule implements EngineModule {
     this.parties.set(
       command.playerId,
       new Party({
+        getAttack: (attackId) => context.species.getAttack(attackId),
         level: 50,
         pokemon,
         owner: command.playerId,

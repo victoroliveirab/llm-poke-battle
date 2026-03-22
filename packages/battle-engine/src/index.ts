@@ -5,6 +5,7 @@ import { DomainEvent } from './engine/events';
 import { EngineModule } from './engine/module';
 import { InvalidMoveError } from './errors';
 import { PartyModule } from './modules/party';
+import { PartyMove } from './modules/party/party';
 import { PhaseModule, GamePhase } from './modules/phase';
 import { Player, PlayerModule } from './modules/player';
 import { DefaultLoader } from './modules/species/loader';
@@ -152,6 +153,7 @@ export class Battle {
     if (playerID === viewer) {
       return party.map((entry) => ({
         ...entry,
+        moves: entry.moves.map(sanitizePublicMove),
         volatileStatuses: sanitizePublicVolatileStatuses(entry.volatileStatuses),
       }));
     }
@@ -180,7 +182,7 @@ export class Battle {
           : [],
         moves: entry.moves.map((move) =>
           move.used
-            ? move
+            ? sanitizePublicMove(move)
             : {
                 accuracy: null,
                 name: '???',
@@ -222,7 +224,13 @@ export { InvalidMoveError };
 export { parseAction };
 export type { Action, ActionEnvelope } from './types';
 export type { Player } from './modules/player';
-export type { SpeciesLoader, PokemonCatalog, PokemonSpecies } from './modules/species';
+export type {
+  AttackCatalog,
+  AttackDefinition,
+  SpeciesLoader,
+  PokemonCatalog,
+  PokemonSpecies,
+} from './modules/species';
 export type {
   AppliedStatus,
   MajorStatus,
@@ -240,4 +248,16 @@ function sanitizePublicVolatileStatuses(statuses: VolatileStatus[]) {
 
     return cloneVolatileStatus(status);
   });
+}
+
+function sanitizePublicMove(move: PartyMove) {
+  return {
+    accuracy: move.accuracy,
+    maxPP: move.maxPP,
+    name: move.name,
+    power: move.power,
+    remaining: move.remaining,
+    type: move.type,
+    used: move.used,
+  };
 }

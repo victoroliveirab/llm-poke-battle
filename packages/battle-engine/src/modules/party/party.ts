@@ -1,4 +1,4 @@
-import { PokemonSpecies } from '../species';
+import { AttackDefinition, PokemonSpecies } from '../species';
 import {
   clearVolatileStatuses,
   cloneMajorStatus,
@@ -10,13 +10,9 @@ import {
   VolatileStatus,
 } from '../turn/status-state';
 
-export type PartyMove = {
-  accuracy: number;
+export type PartyMove = Omit<AttackDefinition, 'pp'> & {
   maxPP: number;
-  name: string;
-  power: number;
   remaining: number;
-  type: string;
   used: number;
 };
 
@@ -55,17 +51,20 @@ type StageStat =
   | 'specialDefense';
 
 type Params = {
+  getAttack: (attackId: string) => AttackDefinition;
   level: number;
   pokemon: PokemonSpecies[];
   owner: string;
 };
 
 export class Party {
+  private readonly getAttackDefinition: Params['getAttack'];
   private readonly level: number;
   private readonly owner: string;
   private pokemon: PartyEntry[];
 
   constructor(params: Params) {
+    this.getAttackDefinition = params.getAttack;
     this.level = params.level;
     this.owner = params.owner;
     this.pokemon = params.pokemon.map((entry, index) =>
@@ -81,7 +80,7 @@ export class Party {
     return this.pokemon.map((entry) => ({
       ...entry,
       majorStatus: cloneMajorStatus(entry.majorStatus),
-      moves: entry.moves.map((move) => ({ ...move })),
+      moves: entry.moves.map(clonePartyMove),
       stats: { ...entry.stats },
       volatileStatuses: entry.volatileStatuses.map(cloneVolatileStatus),
     }));
@@ -375,15 +374,16 @@ export class Party {
       health: stats.hp,
       level: this.level,
       majorStatus: null,
-      moves: pokemon.moves.map((move) => ({
-        accuracy: move.accuracy,
-        maxPP: move.pp,
-        name: move.name,
-        power: move.power,
-        remaining: move.pp,
-        type: move.type,
-        used: 0,
-      })),
+      moves: pokemon.moves.map((attackId) => {
+        const attack = this.getAttackDefinition(attackId);
+        const { pp, ...attackWithoutPP } = attack;
+        return clonePartyMove({
+          ...attackWithoutPP,
+          maxPP: pp,
+          remaining: pp,
+          used: 0,
+        });
+      }),
       name: pokemon.species,
       specialAttackStage: 0,
       specialDefenseStage: 0,
@@ -392,4 +392,18 @@ export class Party {
       volatileStatuses: [],
     };
   }
+}
+
+function clonePartyMove(move: PartyMove): PartyMove {
+  const clonedMove: PartyMove = { ...move };
+
+  if (move.statChanges) {
+    clonedMove.statChanges = move.statChanges.map((change) => ({ ...change }));
+  }
+
+  if (move.statusEffects) {
+    clonedMove.statusEffects = move.statusEffects.map((effect) => ({ ...effect }));
+  }
+
+  return clonedMove;
 }
