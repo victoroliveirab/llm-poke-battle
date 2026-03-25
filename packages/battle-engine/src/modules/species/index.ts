@@ -5,7 +5,14 @@ import { DomainEvent } from '../../engine/events';
 import { EngineModule } from '../../engine/module';
 import { pokemonTypeEnum } from '../../shared/schemas';
 
-const majorStatusValues = ['paralysis', 'burn', 'freeze', 'sleep', 'poison'] as const;
+const majorStatusValues = [
+  'paralysis',
+  'burn',
+  'freeze',
+  'sleep',
+  'poison',
+  'badly-poisoned',
+] as const;
 const volatileStatusValues = ['confusion'] as const;
 const statusTargetSchema = z.enum(['self', 'opponent']);
 const statusChanceSchema = z.number();

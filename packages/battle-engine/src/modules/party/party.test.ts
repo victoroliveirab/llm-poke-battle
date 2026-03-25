@@ -74,6 +74,21 @@ describe('party status state', () => {
     });
   });
 
+  it('applies badly poisoned as a major status', () => {
+    const party = createParty();
+
+    expect(
+      party.applyMajorStatus('Charizard', {
+        kind: 'badly-poisoned',
+        turnsElapsed: 1,
+      }),
+    ).toBe(true);
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 1,
+    });
+  });
+
   it('adds a volatile status', () => {
     const party = createParty();
 
@@ -133,6 +148,21 @@ describe('party status state', () => {
     expect(party.getPokemonByName('Charizard')?.volatileStatuses).toEqual([]);
   });
 
+  it('resets badly poisoned turns when switching out', () => {
+    const party = createParty();
+    party.applyMajorStatus('Charizard', {
+      kind: 'badly-poisoned',
+      turnsElapsed: 3,
+    });
+
+    party.putPokemonInFront('Raichu');
+
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 1,
+    });
+  });
+
   it('clones major status state when reading the full party', () => {
     const party = createParty();
     party.applyMajorStatus('Charizard', {
@@ -151,6 +181,31 @@ describe('party status state', () => {
     expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
       kind: 'sleep',
       turnsRemaining: 3,
+    });
+  });
+
+  it('clones badly poisoned state when reading the full party', () => {
+    const party = createParty();
+    party.applyMajorStatus('Charizard', {
+      kind: 'badly-poisoned',
+      turnsElapsed: 2,
+    });
+
+    const snapshot = party.all();
+    const active = snapshot[0];
+    if (
+      !active ||
+      active.majorStatus === null ||
+      active.majorStatus.kind !== 'badly-poisoned'
+    ) {
+      throw new Error('Expected Charizard to be badly poisoned in the snapshot.');
+    }
+
+    active.majorStatus.turnsElapsed = 4;
+
+    expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 2,
     });
   });
 });

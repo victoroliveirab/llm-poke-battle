@@ -293,4 +293,118 @@ describe('turn resolver', () => {
     ).toBe(false);
     expect(benchedCharizard?.health).toBe(initialHealth);
   });
+
+  it('applies increasing badly poisoned damage across consecutive turns', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Nidoking', 'Fearow', 'Charizard'],
+      playerTwoParty: ['Exeggutor', 'Fearow', 'Charizard'],
+      randomSequence: [
+        0.99, // turn 1 Exeggutor Stun Spore miss check
+        0.99, // turn 2 Exeggutor Stun Spore miss check
+      ],
+    });
+    const badlyPoisonedPokemon = fixture.getActivePokemon(PLAYER_TWO_ID);
+    badlyPoisonedPokemon.majorStatus = { kind: 'badly-poisoned', turnsElapsed: 1 };
+    const expectedFirstDamage = Math.floor(badlyPoisonedPokemon.stats.hp / 16);
+    const expectedSecondDamage = Math.floor(
+      (badlyPoisonedPokemon.stats.hp * 2) / 16,
+    );
+
+    const firstTurn = fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Fearow'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    expect(
+      firstTurn.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.status === 'badly-poisoned' &&
+          event.damage === expectedFirstDamage,
+      ),
+    ).toBe(true);
+    expect(fixture.getActivePokemon(PLAYER_TWO_ID).majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 2,
+    });
+
+    const secondTurn = fixture.resolveActions(
+      fixture.attack(PLAYER_ONE_ID, 'Drill Peck'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    expect(
+      secondTurn.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.status === 'badly-poisoned' &&
+          event.damage === expectedSecondDamage,
+      ),
+    ).toBe(true);
+    expect(fixture.getActivePokemon(PLAYER_TWO_ID).majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 3,
+    });
+  });
+
+  it('resets badly poisoned damage when the pokemon switches out and back in', () => {
+    const fixture = createTurnStateFixture({
+      playerOneParty: ['Charizard', 'Fearow', 'Nidoking'],
+      playerTwoParty: ['Exeggutor', 'Raichu', 'Nidoking'],
+      randomSequence: [
+        0.99, // turn 1 Exeggutor Stun Spore miss check
+        0.99, // turn 2 Exeggutor Stun Spore miss check
+      ],
+    });
+    const switchedOutPokemon = fixture.getActivePokemon(PLAYER_ONE_ID);
+    switchedOutPokemon.majorStatus = {
+      kind: 'badly-poisoned',
+      turnsElapsed: 3,
+    };
+    const initialHealth = switchedOutPokemon.health;
+    const expectedResetDamage = Math.floor(switchedOutPokemon.stats.hp / 16);
+
+    const switchOutTurn = fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Fearow'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    const playerOneParty = fixture.simulatedParties.get(PLAYER_ONE_ID);
+    const benchedCharizard = playerOneParty?.find((pokemon) => pokemon.name === 'Charizard');
+
+    expect(
+      switchOutTurn.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.status === 'badly-poisoned',
+      ),
+    ).toBe(false);
+    expect(benchedCharizard?.health).toBe(initialHealth);
+    expect(benchedCharizard?.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 1,
+    });
+
+    const switchInTurn = fixture.resolveActions(
+      fixture.switchPokemon(PLAYER_ONE_ID, 'Charizard'),
+      fixture.attack(PLAYER_TWO_ID, 'Stun Spore'),
+    );
+
+    expect(
+      switchInTurn.events.some(
+        (event) =>
+          event.type === 'pokemon.hurt_by_status' &&
+          event.playerId === PLAYER_ONE_ID &&
+          event.status === 'badly-poisoned' &&
+          event.damage === expectedResetDamage,
+      ),
+    ).toBe(true);
+    expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 2,
+    });
+  });
 });

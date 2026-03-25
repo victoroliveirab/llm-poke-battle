@@ -271,6 +271,23 @@
       ]
     },
     {
+      "id": "toxic",
+      "name": "Toxic",
+      "power": 0,
+      "accuracy": 90,
+      "pp": 10,
+      "type": "poison",
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "badly-poisoned",
+          "chance": 100
+        }
+      ]
+    },
+    {
       "id": "growl",
       "name": "Growl",
       "power": 0,

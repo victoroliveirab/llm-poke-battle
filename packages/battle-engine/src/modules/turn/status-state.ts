@@ -1,4 +1,10 @@
-export type MajorStatusKind = 'paralysis' | 'burn' | 'freeze' | 'sleep' | 'poison';
+export type MajorStatusKind =
+  | 'paralysis'
+  | 'burn'
+  | 'freeze'
+  | 'sleep'
+  | 'poison'
+  | 'badly-poisoned';
 
 export type MajorStatus =
   | null
@@ -17,6 +23,10 @@ export type MajorStatus =
     }
   | {
       kind: 'poison';
+    }
+  | {
+      kind: 'badly-poisoned';
+      turnsElapsed: number;
     };
 
 export type VolatileStatus =
@@ -65,7 +75,8 @@ export function isMajorStatusKind(status: StatusKind): status is MajorStatusKind
     status === 'burn' ||
     status === 'freeze' ||
     status === 'sleep' ||
-    status === 'poison'
+    status === 'poison' ||
+    status === 'badly-poisoned'
   );
 }
 
@@ -129,5 +140,10 @@ export function createMajorStatus(
       };
     case 'poison':
       return { kind: 'poison' };
+    case 'badly-poisoned':
+      return {
+        kind: 'badly-poisoned',
+        turnsElapsed: 1,
+      };
   }
 }

@@ -245,6 +245,47 @@ describe('applyStatusEffect', () => {
     ).toBe(true);
   });
 
+  it('applies badly poisoned to non-immune targets', () => {
+    const context = createContext([0], {
+      defenderSpecies: {
+        type1: 'grass',
+        type2: null,
+      },
+      move: {
+        name: 'Toxic',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'badly-poisoned',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 1,
+    });
+    expect(
+      context.events.some(
+        (event) =>
+          event.type === 'pokemon.major_status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.status.kind === 'badly-poisoned' &&
+          event.status.turnsElapsed === 1 &&
+          event.active === true,
+      ),
+    ).toBe(true);
+  });
+
   it('does not apply poison to poison-type targets', () => {
     const context = createContext([0], {
       defenderSpecies: {
@@ -317,6 +358,44 @@ describe('applyStatusEffect', () => {
         pokemonName: 'Lapras',
         targetPokemonName: 'Nidoking',
         moveName: 'Poison Powder',
+      },
+    ]);
+  });
+
+  it('does not apply badly poisoned to steel-type targets', () => {
+    const context = createContext([0], {
+      defenderSpecies: {
+        type1: 'steel',
+        type2: null,
+      },
+      move: {
+        name: 'Toxic',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'major-status',
+          status: 'badly-poisoned',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.majorStatus).toBeNull();
+    expect(context.events).toEqual([
+      {
+        type: 'attack.missed',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        moveName: 'Toxic',
       },
     ]);
   });

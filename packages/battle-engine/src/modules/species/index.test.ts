@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { GameContext } from '../../engine/context';
 import { SpeciesModule, type SpeciesData } from '.';
+import { DefaultLoader } from './loader';
 
 function buildSpeciesData(overrides: Partial<SpeciesData> = {}): SpeciesData {
   return {
@@ -84,5 +85,29 @@ describe('species catalog validation', () => {
     expect(() => module.init(null as unknown as GameContext)).toThrow(
       'Attack thunderbolt is duplicated',
     );
+  });
+
+  it('loads Toxic from the default attack catalog', () => {
+    const toxic = new DefaultLoader()
+      .load()
+      .attacks.find((attack) => attack.id === 'toxic');
+
+    expect(toxic).toEqual({
+      id: 'toxic',
+      name: 'Toxic',
+      power: 0,
+      accuracy: 90,
+      pp: 10,
+      type: 'poison',
+      class: 'special',
+      statusEffects: [
+        {
+          target: 'opponent',
+          kind: 'major-status',
+          status: 'badly-poisoned',
+          chance: 100,
+        },
+      ],
+    });
   });
 });

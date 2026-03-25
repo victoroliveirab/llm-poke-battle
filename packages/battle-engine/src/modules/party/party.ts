@@ -113,6 +113,12 @@ export class Party {
     if (activePokemon && activePokemon.name !== name) {
       this.resetBattleStages(activePokemon.name);
       clearVolatileStatuses(activePokemon);
+      if (activePokemon.majorStatus?.kind === 'badly-poisoned') {
+        activePokemon.majorStatus = {
+          kind: 'badly-poisoned',
+          turnsElapsed: 1,
+        };
+      }
     }
 
     pokemon.used = true;

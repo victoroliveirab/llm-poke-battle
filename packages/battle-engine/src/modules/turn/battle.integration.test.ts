@@ -154,6 +154,48 @@ describe('turn battle integration', () => {
     expect(activePokemon.majorStatus).toEqual({ kind: 'poison' });
   });
 
+  it('exposes badly poisoned through public player state', () => {
+    const fixture = createBattleFixture();
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Nidoking', 'Raichu', 'Charizard'],
+    );
+
+    const internals = fixture.game as unknown as {
+      context: GameContext;
+      partyModule: PartyModule;
+    };
+
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.major_status_changed',
+        playerId: 'player-one',
+        pokemonName: 'Charizard',
+        status: {
+          kind: 'badly-poisoned',
+          turnsElapsed: 1,
+        },
+        active: true,
+        sourcePlayerId: 'player-two',
+        moveName: 'Toxic',
+      },
+      internals.context,
+    );
+
+    const state = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<Record<string, unknown>>;
+    };
+    const activePokemon = state.player[0];
+    if (!activePokemon) {
+      throw new Error('Expected an active Pokemon in player state.');
+    }
+
+    expect(activePokemon.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 1,
+    });
+  });
+
   it('keeps confusion duration in sync through the public Battle API after a turn resolves', () => {
     const fixture = createBattleFixture({
       randomSequence: [

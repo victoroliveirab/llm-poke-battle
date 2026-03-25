@@ -129,7 +129,10 @@ function isImmuneToStatus(
   status: AppliedMoveStatus,
   targetSpecies: Pick<PokemonSpecies, 'type1' | 'type2'>,
 ) {
-  if (status.kind !== 'major-status' || status.status !== 'poison') {
+  if (
+    status.kind !== 'major-status' ||
+    (status.status !== 'poison' && status.status !== 'badly-poisoned')
+  ) {
     return false;
   }
 

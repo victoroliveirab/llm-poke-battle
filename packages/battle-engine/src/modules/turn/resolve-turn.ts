@@ -271,6 +271,12 @@ function applySwitch(
   const activePokemon = party[0];
   if (activePokemon && activePokemon.name !== pokemonName) {
     clearVolatileStatuses(activePokemon);
+    if (activePokemon.majorStatus?.kind === 'badly-poisoned') {
+      activePokemon.majorStatus = {
+        kind: 'badly-poisoned',
+        turnsElapsed: 1,
+      };
+    }
   }
 
   pokemon.used = true;

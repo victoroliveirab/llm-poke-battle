@@ -714,6 +714,12 @@ function formatStatusAdjective(status: MajorStatus | StatusKind | undefined) {
   if (kind === 'sleep') {
     return 'asleep';
   }
+  if (kind === 'poison') {
+    return 'poisoned';
+  }
+  if (kind === 'badly-poisoned') {
+    return 'badly poisoned';
+  }
   if (kind === 'confusion') {
     return 'confused';
   }
@@ -743,6 +749,12 @@ function formatStatusNoun(status: Exclude<MajorStatus, null> | StatusKind) {
   }
   if (kind === 'sleep') {
     return 'sleep';
+  }
+  if (kind === 'poison') {
+    return 'poison';
+  }
+  if (kind === 'badly-poisoned') {
+    return 'badly poison';
   }
   return 'status';
 }
