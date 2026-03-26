@@ -70,6 +70,75 @@ describe('turn battle integration', () => {
     expect(rockSlide?.remaining).toBe(9);
   });
 
+  it('supports custom species definitions through the public Battle API', () => {
+    const fixture = createBattleFixture({
+      partySize: 1,
+      availablePokemon: [
+        {
+          species: 'Nidoking',
+          stats: {
+            attack: 70,
+            defense: 80,
+            specialAttack: 95,
+            specialDefense: 90,
+            speed: 100,
+            hp: 90,
+          },
+          type1: 'poison',
+          type2: null,
+          moves: ['toxic', 'growl'],
+        },
+        {
+          species: 'Snorlax',
+          stats: {
+            attack: 88,
+            defense: 82,
+            specialAttack: 75,
+            specialDefense: 78,
+            speed: 70,
+            hp: 95,
+          },
+          type1: 'normal',
+          type2: null,
+          moves: ['growl', 'strength'],
+        },
+      ],
+      randomSequence: [
+        0, // Toxic accuracy
+        0, // Toxic status chance
+        0, // Growl accuracy
+      ],
+    });
+    fixture.selectParties(['Nidoking'], ['Snorlax']);
+
+    const events = fixture.resolveAttackTurn('Toxic', 'Growl');
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'pokemon.major_status_changed' &&
+          event.playerId === 'player-two' &&
+          event.status.kind === 'badly-poisoned' &&
+          event.status.turnsElapsed === 1 &&
+          event.moveName === 'Toxic',
+      ),
+    ).toBe(true);
+
+    const state = fixture.game.getStateAsPlayer('player-two') as {
+      player: Array<Record<string, unknown>>;
+    };
+    const activePokemon = state.player[0];
+    if (!activePokemon) {
+      throw new Error('Expected an active Pokemon in player state.');
+    }
+
+    expect(activePokemon.name).toBe('Snorlax');
+    expect(activePokemon.majorStatus).toEqual({
+      kind: 'badly-poisoned',
+      turnsElapsed: 2,
+    });
+  });
+
   it('exposes major and volatile statuses through public player state', () => {
     const fixture = createBattleFixture();
     fixture.selectParties(

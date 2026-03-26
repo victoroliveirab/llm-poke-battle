@@ -7,14 +7,15 @@ import {
   buildPartyEntries,
   buildRandomSequence,
   buildSwitchAction,
-  getSpecies,
+  createTestSpeciesLookup,
   PLAYER_ONE_ID,
   PLAYER_TWO_ID,
+  TestPokemonInput,
 } from './shared';
 
 type TurnStateFixtureParams = {
-  playerOneParty?: string[];
-  playerTwoParty?: string[];
+  playerOneParty?: TestPokemonInput[];
+  playerTwoParty?: TestPokemonInput[];
   randomSequence?: number[];
   statusHandlerRegistry?: StatusHandlerRegistry;
 };
@@ -22,20 +23,28 @@ type TurnStateFixtureParams = {
 type StageOverrides = Partial<Record<StageStat, number>>;
 
 export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
+  const playerOneParty = params.playerOneParty ?? [
+    'Charizard',
+    'Raichu',
+    'Nidoking',
+  ];
+  const playerTwoParty = params.playerTwoParty ?? [
+    'Nidoking',
+    'Raichu',
+    'Charizard',
+  ];
+  const speciesLookup = createTestSpeciesLookup([
+    ...playerOneParty,
+    ...playerTwoParty,
+  ]);
   const simulatedParties = new Map<string, ReturnType<typeof buildPartyEntries>>([
     [
       PLAYER_ONE_ID,
-      buildPartyEntries(
-        PLAYER_ONE_ID,
-        params.playerOneParty ?? ['Charizard', 'Raichu', 'Nidoking'],
-      ),
+      buildPartyEntries(PLAYER_ONE_ID, playerOneParty),
     ],
     [
       PLAYER_TWO_ID,
-      buildPartyEntries(
-        PLAYER_TWO_ID,
-        params.playerTwoParty ?? ['Nidoking', 'Raichu', 'Charizard'],
-      ),
+      buildPartyEntries(PLAYER_TWO_ID, playerTwoParty),
     ],
   ]);
   const random = buildRandomSequence(params.randomSequence ?? []);
@@ -93,7 +102,7 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
       playerIds: [PLAYER_ONE_ID, PLAYER_TWO_ID],
       actions: [playerOneAction, playerTwoAction],
       simulatedParties,
-      getSpecies,
+      getSpecies: speciesLookup.getSpecies,
       random,
       statusHandlerRegistry: params.statusHandlerRegistry,
     });
@@ -101,7 +110,7 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
 
   return {
     attack,
-    getSpecies,
+    getSpecies: speciesLookup.getSpecies,
     getActivePokemon(playerId: string) {
       return getActivePokemon(simulatedParties, playerId);
     },

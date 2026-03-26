@@ -1,30 +1,39 @@
 import { describe, expect, it } from 'bun:test';
-import { DefaultLoader } from '../species/loader';
-import { Party } from './party';
+import { createTestParty } from '../../test/builders/species-fixture';
 
 function createParty() {
-  const catalog = new DefaultLoader().load();
-  const species = new Map(catalog.species.map((entry) => [entry.species, entry]));
-  const attacks = new Map(catalog.attacks.map((entry) => [entry.id, entry]));
-
-  return new Party({
-    getAttack: (attackId) => {
-      const attack = attacks.get(attackId);
-      if (!attack) {
-        throw new Error(`Attack ${attackId} not found in test loader.`);
-      }
-
-      return attack;
-    },
-    level: 50,
+  return createTestParty({
     owner: 'player-one',
-    pokemon: ['Charizard', 'Raichu', 'Nidoking'].map((name) => {
-      const pokemon = species.get(name);
-      if (!pokemon) {
-        throw new Error(`Pokemon ${name} not found in test loader.`);
-      }
-      return pokemon;
-    }),
+    pokemon: [
+      {
+        species: 'Charizard',
+        stats: {
+          attack: 84,
+          defense: 78,
+          specialAttack: 109,
+          specialDefense: 85,
+          speed: 100,
+          hp: 78,
+        },
+        type1: 'fire',
+        type2: 'flying',
+        moves: ['fire-punch', 'strength'],
+      },
+      {
+        species: 'Raichu',
+        stats: {
+          attack: 90,
+          defense: 55,
+          specialAttack: 90,
+          specialDefense: 80,
+          speed: 110,
+          hp: 60,
+        },
+        type1: 'electric',
+        type2: null,
+        moves: ['thunderbolt', 'growl'],
+      },
+    ],
   });
 }
 

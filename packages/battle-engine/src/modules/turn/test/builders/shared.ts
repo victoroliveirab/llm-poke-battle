@@ -1,45 +1,33 @@
 import { DomainEvent } from '../../../../engine/events';
-import { Party, PartyEntry } from '../../../party/party';
-import { AttackDefinition, PokemonSpecies } from '../../../species';
-import { DefaultLoader } from '../../../species/loader';
-import { getActivePokemon } from '../../party-state';
 import { TurnAction } from '../../types';
+import {
+  buildPartyEntries as buildEntriesFromTestPokemon,
+  createTestParty,
+  createTestSpeciesLoader,
+  createTestSpeciesLookup,
+  getAttackDefinition,
+  getCatalogSpecies,
+  TestPokemonInput,
+  TestPokemonSpecies,
+} from '../../../../test/builders/species-fixture';
 
 export const PLAYER_ONE_ID = 'player-one';
 export const PLAYER_TWO_ID = 'player-two';
 
-const catalog = new DefaultLoader().load();
-const speciesCatalog = catalog.species;
-const speciesByName = new Map<string, PokemonSpecies>(
-  speciesCatalog.map((entry) => [entry.species, entry]),
-);
-const attacksById = new Map<string, AttackDefinition>(
-  catalog.attacks.map((entry) => [entry.id, entry]),
-);
+export type { TestPokemonInput, TestPokemonSpecies };
+export {
+  createTestParty,
+  createTestSpeciesLoader,
+  createTestSpeciesLookup,
+  getAttackDefinition,
+};
 
 export function getSpecies(speciesName: string) {
-  const species = speciesByName.get(speciesName);
-  if (!species) {
-    throw new Error(`Pokemon ${speciesName} not found in test fixture catalog.`);
-  }
-
-  return species;
+  return getCatalogSpecies(speciesName);
 }
 
-export function buildPartyEntries(owner: string, pokemonNames: string[]) {
-  return new Party({
-    getAttack: (attackId) => {
-      const attack = attacksById.get(attackId);
-      if (!attack) {
-        throw new Error(`Attack ${attackId} not found in test fixture catalog.`);
-      }
-
-      return attack;
-    },
-    level: 50,
-    pokemon: pokemonNames.map((name) => getSpecies(name)),
-    owner,
-  }).all();
+export function buildPartyEntries(owner: string, pokemon: TestPokemonInput[]) {
+  return buildEntriesFromTestPokemon(owner, pokemon);
 }
 
 export function buildRandomSequence(sequence: number[]) {
