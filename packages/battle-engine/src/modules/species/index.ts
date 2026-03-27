@@ -74,6 +74,7 @@ const catalogStats = z.object({
 
 const catalogOptionSchema = z.object({
   species: z.string(),
+  genderMalePercentage: z.number().min(0).max(1),
   stats: catalogStats,
   type1: pokemonTypeEnum,
   type2: pokemonTypeEnum.nullable(),
@@ -124,7 +125,9 @@ export class SpeciesModule implements EngineModule {
   }
 
   private loadCatalog() {
-    const { attacks, species } = this.loader.load();
+    const loaded = this.loader.load();
+    const attacks = z.array(attackDefinitionSchema).parse(loaded.attacks);
+    const species = z.array(catalogOptionSchema).parse(loaded.species);
     const byAttackId = new Map<string, AttackDefinition>();
     const bySpecies = new Map<string, PokemonSpecies>();
 

@@ -25,12 +25,15 @@ export type PartyStats = {
   hp: number;
 };
 
+export type PokemonGender = 'male' | 'female';
+
 export type PartyEntry = StatusState & {
   accuracyStage: number;
   attackStage: number;
   criticalStage: number;
   defenseStage: number;
   evasionStage: number;
+  gender: PokemonGender;
   health: number;
   level: number;
   moves: PartyMove[];
@@ -55,18 +58,21 @@ type Params = {
   level: number;
   pokemon: PokemonSpecies[];
   owner: string;
+  random: () => number;
 };
 
 export class Party {
   private readonly getAttackDefinition: Params['getAttack'];
   private readonly level: number;
   private readonly owner: string;
+  private readonly random: Params['random'];
   private pokemon: PartyEntry[];
 
   constructor(params: Params) {
     this.getAttackDefinition = params.getAttack;
     this.level = params.level;
     this.owner = params.owner;
+    this.random = params.random;
     this.pokemon = params.pokemon.map((entry, index) =>
       this.buildPokemonInitialState(entry, index),
     );
@@ -377,6 +383,7 @@ export class Party {
       criticalStage: 0,
       defenseStage: 0,
       evasionStage: 0,
+      gender: this.determineGender(pokemon),
       health: stats.hp,
       level: this.level,
       majorStatus: null,
@@ -397,6 +404,10 @@ export class Party {
       used: index === 0,
       volatileStatuses: [],
     };
+  }
+
+  private determineGender(pokemon: PokemonSpecies): PokemonGender {
+    return this.random() < pokemon.genderMalePercentage ? 'male' : 'female';
   }
 }
 

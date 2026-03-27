@@ -64,6 +64,52 @@ describe('party status state', () => {
     });
   });
 
+  it('assigns gender from the configured male percentage during construction', () => {
+    const party = createTestParty({
+      owner: 'player-one',
+      random: (() => {
+        const values = [0.874, 0.5];
+        let index = 0;
+        return () => values[index++] ?? 0;
+      })(),
+      pokemon: [
+        {
+          species: 'Charizard',
+          genderMalePercentage: 0.875,
+          stats: {
+            attack: 84,
+            defense: 78,
+            specialAttack: 109,
+            specialDefense: 85,
+            speed: 100,
+            hp: 78,
+          },
+          type1: 'fire',
+          type2: 'flying',
+          moves: ['fire-punch', 'strength'],
+        },
+        {
+          species: 'Raichu',
+          genderMalePercentage: 0.5,
+          stats: {
+            attack: 90,
+            defense: 55,
+            specialAttack: 90,
+            specialDefense: 80,
+            speed: 110,
+            hp: 60,
+          },
+          type1: 'electric',
+          type2: null,
+          moves: ['thunderbolt', 'growl'],
+        },
+      ],
+    });
+
+    expect(party.getPokemonByName('Charizard')?.gender).toBe('male');
+    expect(party.getPokemonByName('Raichu')?.gender).toBe('female');
+  });
+
   it('applies a major status', () => {
     const party = createParty();
 
@@ -216,5 +262,12 @@ describe('party status state', () => {
       kind: 'badly-poisoned',
       turnsElapsed: 2,
     });
+  });
+
+  it('includes gender when reading the full party snapshot', () => {
+    const party = createParty();
+
+    expect(party.all()[0]?.gender).toBe('male');
+    expect(party.all()[1]?.gender).toBe('male');
   });
 });

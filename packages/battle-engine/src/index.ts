@@ -170,6 +170,7 @@ export class Battle {
         criticalStage: entry.criticalStage,
         defenseStage: entry.defenseStage,
         evasionStage: entry.evasionStage,
+        gender: isRevealedPokemon ? entry.gender : null,
         health: isRevealedPokemon ? entry.health : null,
         isActive: index === 0,
         majorStatus: isRevealedPokemon ? entry.majorStatus : null,

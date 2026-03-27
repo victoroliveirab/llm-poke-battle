@@ -139,6 +139,39 @@ describe('turn battle integration', () => {
     });
   });
 
+  it('exposes gender to the owner and only for revealed opponent Pokemon', () => {
+    const fixture = createBattleFixture({
+      partyCreationRandomSequence: [
+        0.9, // player one Charizard -> female
+        0.2, // player one Raichu -> male
+        0.4, // player one Nidoking -> male
+        0.3, // player two Nidoking -> male
+        0.8, // player two Raichu -> female
+        0.1, // player two Charizard -> male
+      ],
+    });
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Nidoking', 'Raichu', 'Charizard'],
+    );
+
+    const playerState = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<Record<string, unknown>>;
+      opponent: Array<Record<string, unknown>>;
+    };
+    const playerActivePokemon = playerState.player[0];
+    const opponentActivePokemon = playerState.opponent[0];
+    const opponentBenchPokemon = playerState.opponent[1];
+    if (!playerActivePokemon || !opponentActivePokemon || !opponentBenchPokemon) {
+      throw new Error('Expected player and opponent party state.');
+    }
+
+    expect(playerActivePokemon.gender).toBe('female');
+    expect(playerState.player[1]?.gender).toBe('male');
+    expect(opponentActivePokemon.gender).toBe('male');
+    expect(opponentBenchPokemon.gender).toBeNull();
+  });
+
   it('exposes major and volatile statuses through public player state', () => {
     const fixture = createBattleFixture();
     fixture.selectParties(

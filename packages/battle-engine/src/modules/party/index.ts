@@ -46,6 +46,7 @@ export class PartyModule implements EngineModule {
         level: 50,
         pokemon,
         owner: command.playerId,
+        random: () => context.random(),
       }),
     );
 

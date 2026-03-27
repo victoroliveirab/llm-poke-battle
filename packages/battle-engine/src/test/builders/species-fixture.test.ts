@@ -74,6 +74,7 @@ describe('test species fixture builders', () => {
 
     expect(lookup.getSpecies('Nidoking')).toEqual({
       species: 'Nidoking',
+      genderMalePercentage: 1,
       stats: {
         attack: 70,
         defense: 80,
@@ -86,5 +87,30 @@ describe('test species fixture builders', () => {
       type2: null,
       moves: ['toxic', 'growl'],
     });
+  });
+
+  it('allows tests to override gender without specifying gender percentages', () => {
+    const party = createTestParty({
+      owner: 'player-one',
+      pokemon: [
+        {
+          species: 'Raichu',
+          gender: 'female',
+          stats: {
+            attack: 95,
+            defense: 80,
+            specialAttack: 100,
+            specialDefense: 85,
+            speed: 110,
+            hp: 75,
+          },
+          type1: 'electric',
+          type2: null,
+          moves: ['thunderbolt', 'toxic'],
+        },
+      ],
+    });
+
+    expect(party.getPokemonByName('Raichu')?.gender).toBe('female');
   });
 });

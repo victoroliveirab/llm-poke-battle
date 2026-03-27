@@ -19,6 +19,7 @@ function buildSpeciesData(overrides: Partial<SpeciesData> = {}): SpeciesData {
     species: [
       {
         species: 'Raichu',
+        genderMalePercentage: 0.5,
         stats: {
           attack: 90,
           defense: 55,
@@ -44,6 +45,7 @@ describe('species catalog validation', () => {
           species: [
             {
               species: 'Raichu',
+              genderMalePercentage: 0.5,
               stats: {
                 attack: 90,
                 defense: 55,
@@ -109,5 +111,34 @@ describe('species catalog validation', () => {
         },
       ],
     });
+  });
+
+  it('rejects species with an invalid gender male percentage', () => {
+    const module = new SpeciesModule({
+      load: () =>
+        buildSpeciesData({
+          species: [
+            {
+              species: 'Raichu',
+              genderMalePercentage: 1.1,
+              stats: {
+                attack: 90,
+                defense: 55,
+                hp: 60,
+                specialAttack: 90,
+                specialDefense: 80,
+                speed: 110,
+              },
+              type1: 'electric',
+              type2: null,
+              moves: ['thunderbolt'],
+            },
+          ],
+        }),
+    });
+
+    expect(() => module.init(null as unknown as GameContext)).toThrow(
+      'Number must be less than or equal to 1',
+    );
   });
 });

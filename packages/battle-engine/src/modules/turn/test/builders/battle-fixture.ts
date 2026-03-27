@@ -8,14 +8,15 @@ import {
 
 type BattleFixtureParams = {
   partySize?: number;
+  partyCreationRandomSequence?: number[];
   randomSequence?: number[];
   availablePokemon?: TestPokemonInput[];
 };
 
 export function createBattleFixture(params: BattleFixtureParams = {}) {
+  const sequence = [...(params.randomSequence ?? [])];
   const random = (() => {
     let randomIndex = 0;
-    const sequence = params.randomSequence ?? [];
 
     return () => {
       const value = sequence[randomIndex];
@@ -39,6 +40,11 @@ export function createBattleFixture(params: BattleFixtureParams = {}) {
   return {
     game,
     selectParties(playerOneParty: string[], playerTwoParty: string[]) {
+      const partyCreationSequence =
+        params.partyCreationRandomSequence ??
+        new Array(playerOneParty.length + playerTwoParty.length).fill(0);
+      sequence.unshift(...partyCreationSequence);
+
       game.selectParty(PLAYER_ONE_ID, playerOneParty);
       game.selectParty(PLAYER_TWO_ID, playerTwoParty);
     },

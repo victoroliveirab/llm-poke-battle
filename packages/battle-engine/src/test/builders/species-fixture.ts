@@ -1,4 +1,4 @@
-import { Party } from '../../modules/party/party';
+import { Party, PokemonGender } from '../../modules/party/party';
 import {
   AttackDefinition,
   PokemonSpecies,
@@ -6,8 +6,16 @@ import {
 } from '../../modules/species';
 import { DefaultLoader } from '../../modules/species/loader';
 
-export type TestPokemonSpecies = PokemonSpecies;
+export type TestPokemonSpecies = Omit<PokemonSpecies, 'genderMalePercentage'> & {
+  gender?: PokemonGender;
+  genderMalePercentage?: number;
+};
 export type TestPokemonInput = string | TestPokemonSpecies;
+
+type ResolvedTestPokemon = {
+  gender: PokemonGender | null;
+  species: PokemonSpecies;
+};
 
 const catalog = new DefaultLoader().load();
 const catalogSpeciesByName = new Map<string, PokemonSpecies>(
@@ -37,14 +45,30 @@ export function getCatalogSpecies(speciesName: string) {
 
 export function resolveTestPokemon(pokemon: TestPokemonInput) {
   if (typeof pokemon === 'string') {
-    return getCatalogSpecies(pokemon);
+    return {
+      gender: null,
+      species: getCatalogSpecies(pokemon),
+    } satisfies ResolvedTestPokemon;
   }
 
   for (const attackId of pokemon.moves) {
     getAttackDefinition(attackId);
   }
 
-  return pokemon;
+  const { gender = null, genderMalePercentage, ...species } = pokemon;
+
+  return {
+    gender,
+    species: {
+      ...species,
+      genderMalePercentage:
+        typeof genderMalePercentage === 'number'
+          ? genderMalePercentage
+          : gender === 'female'
+            ? 0
+            : 1,
+    },
+  } satisfies ResolvedTestPokemon;
 }
 
 export function resolveTestPokemonList(pokemon: TestPokemonInput[]) {
@@ -55,19 +79,19 @@ export function createTestSpeciesLookup(pokemon: TestPokemonInput[]) {
   const byName = new Map<string, PokemonSpecies>();
 
   for (const entry of resolveTestPokemonList(pokemon)) {
-    const existing = byName.get(entry.species);
+    const existing = byName.get(entry.species.species);
     if (existing) {
       const existingSignature = JSON.stringify(existing);
-      const nextSignature = JSON.stringify(entry);
+      const nextSignature = JSON.stringify(entry.species);
       if (existingSignature !== nextSignature) {
         throw new Error(
-          `Conflicting definitions found for test Pokemon ${entry.species}.`,
+          `Conflicting definitions found for test Pokemon ${entry.species.species}.`,
         );
       }
       continue;
     }
 
-    byName.set(entry.species, entry);
+    byName.set(entry.species.species, entry.species);
   }
 
   return {
@@ -88,7 +112,7 @@ export function createTestSpeciesLookup(pokemon: TestPokemonInput[]) {
 export function createTestSpeciesLoader(
   pokemon: TestPokemonInput[],
 ): SpeciesLoader {
-  const species = resolveTestPokemonList(pokemon);
+  const species = resolveTestPokemonList(pokemon).map((entry) => entry.species);
 
   return {
     load: () => ({
@@ -102,12 +126,16 @@ export function createTestParty(params: {
   owner: string;
   pokemon: TestPokemonInput[];
   level?: number;
+  random?: () => number;
 }) {
+  const pokemon = resolveTestPokemonList(params.pokemon);
+
   return new Party({
     getAttack: getAttackDefinition,
     level: params.level ?? 50,
     owner: params.owner,
-    pokemon: resolveTestPokemonList(params.pokemon),
+    pokemon: pokemon.map((entry) => entry.species),
+    random: params.random ?? (() => 0),
   });
 }
 
