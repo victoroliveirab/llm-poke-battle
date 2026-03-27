@@ -69,7 +69,15 @@
       "accuracy": 90,
       "pp": 10,
       "type": "fairy",
-      "class": "physical"
+      "class": "physical",
+      "statChanges": [
+        {
+          "target": "opponent",
+          "stat": "attack",
+          "stages": -1,
+          "chance": 10
+        }
+      ]
     },
     {
       "id": "thunderbolt",
@@ -78,7 +86,15 @@
       "accuracy": 100,
       "pp": 15,
       "type": "electric",
-      "class": "special"
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "paralysis",
+          "chance": 10
+        }
+      ]
     },
     {
       "id": "sludge-bomb",
@@ -148,7 +164,15 @@
       "accuracy": 100,
       "pp": 10,
       "type": "psychic",
-      "class": "special"
+      "class": "special",
+      "statChanges": [
+        {
+          "target": "opponent",
+          "stat": "specialDefense",
+          "stages": -1,
+          "chance": 10
+        }
+      ]
     },
     {
       "id": "stun-spore",
@@ -251,7 +275,15 @@
       "accuracy": 100,
       "pp": 20,
       "type": "water",
-      "class": "special"
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "volatile-status",
+          "status": "confusion",
+          "chance": 20
+        }
+      ]
     },
     {
       "id": "confuse-ray",

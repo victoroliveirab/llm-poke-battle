@@ -119,6 +119,21 @@
       "type1": "electric",
       "type2": "steel",
       "moves": ["thunder-wave", "thunderbolt", "barrier", "metal-sound"]
+    },
+    {
+      "species": "Clefable",
+      "genderMalePercentage": 0.25,
+      "stats": {
+        "hp": 95,
+        "attack": 70,
+        "defense": 73,
+        "specialAttack": 95,
+        "specialDefense": 90,
+        "speed": 60
+      },
+      "type1": "fairy",
+      "type2": null,
+      "moves": ["play-rough", "strength", "body-slam", "ice-beam"]
     }
   ]
 }
