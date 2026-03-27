@@ -72,9 +72,14 @@ const catalogStats = z.object({
   hp: z.number(),
 });
 
+const genderMalePercentageSchema = z.union([
+  z.literal(-1),
+  z.number().min(0).max(1),
+]);
+
 const catalogOptionSchema = z.object({
   species: z.string(),
-  genderMalePercentage: z.number().min(0).max(1),
+  genderMalePercentage: genderMalePercentageSchema,
   stats: catalogStats,
   type1: pokemonTypeEnum,
   type2: pokemonTypeEnum.nullable(),

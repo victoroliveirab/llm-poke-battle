@@ -141,4 +141,58 @@ describe('species catalog validation', () => {
       'Number must be less than or equal to 1',
     );
   });
+
+  it('accepts species with -1 gender male percentage as genderless', () => {
+    const module = new SpeciesModule({
+      load: () =>
+        buildSpeciesData({
+          species: [
+            {
+              species: 'Magnezone',
+              genderMalePercentage: -1,
+              stats: {
+                attack: 70,
+                defense: 115,
+                hp: 70,
+                specialAttack: 130,
+                specialDefense: 90,
+                speed: 60,
+              },
+              type1: 'electric',
+              type2: 'steel',
+              moves: ['thunderbolt'],
+            },
+          ],
+        }),
+    });
+
+    expect(() => module.init(null as unknown as GameContext)).not.toThrow();
+  });
+
+  it('rejects species with a negative non-sentinel gender male percentage', () => {
+    const module = new SpeciesModule({
+      load: () =>
+        buildSpeciesData({
+          species: [
+            {
+              species: 'Raichu',
+              genderMalePercentage: -0.5,
+              stats: {
+                attack: 90,
+                defense: 55,
+                hp: 60,
+                specialAttack: 90,
+                specialDefense: 80,
+                speed: 110,
+              },
+              type1: 'electric',
+              type2: null,
+              moves: ['thunderbolt'],
+            },
+          ],
+        }),
+    });
+
+    expect(() => module.init(null as unknown as GameContext)).toThrow();
+  });
 });

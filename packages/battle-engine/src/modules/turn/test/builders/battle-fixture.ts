@@ -1,6 +1,8 @@
 import { Battle } from '../../../../index';
 import {
   createTestSpeciesLoader,
+  createTestSpeciesLookup,
+  getSpecies,
   PLAYER_ONE_ID,
   PLAYER_TWO_ID,
   TestPokemonInput,
@@ -15,6 +17,9 @@ type BattleFixtureParams = {
 
 export function createBattleFixture(params: BattleFixtureParams = {}) {
   const sequence = [...(params.randomSequence ?? [])];
+  const speciesLookup = params.availablePokemon
+    ? createTestSpeciesLookup(params.availablePokemon)
+    : null;
   const random = (() => {
     let randomIndex = 0;
 
@@ -40,9 +45,18 @@ export function createBattleFixture(params: BattleFixtureParams = {}) {
   return {
     game,
     selectParties(playerOneParty: string[], playerTwoParty: string[]) {
+      const countGenderRolls = (party: string[]) =>
+        party.reduce((count, speciesName) => {
+          const species = speciesLookup
+            ? speciesLookup.getSpecies(speciesName)
+            : getSpecies(speciesName);
+          return species.genderMalePercentage === -1 ? count : count + 1;
+        }, 0);
       const partyCreationSequence =
         params.partyCreationRandomSequence ??
-        new Array(playerOneParty.length + playerTwoParty.length).fill(0);
+        new Array(
+          countGenderRolls(playerOneParty) + countGenderRolls(playerTwoParty),
+        ).fill(0);
       sequence.unshift(...partyCreationSequence);
 
       game.selectParty(PLAYER_ONE_ID, playerOneParty);

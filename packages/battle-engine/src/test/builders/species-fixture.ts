@@ -64,6 +64,8 @@ export function resolveTestPokemon(pokemon: TestPokemonInput) {
       genderMalePercentage:
         typeof genderMalePercentage === 'number'
           ? genderMalePercentage
+          : gender === 'genderless'
+            ? -1
           : gender === 'female'
             ? 0
             : 1,

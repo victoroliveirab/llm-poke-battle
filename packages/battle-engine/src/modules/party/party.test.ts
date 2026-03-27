@@ -110,6 +110,53 @@ describe('party status state', () => {
     expect(party.getPokemonByName('Raichu')?.gender).toBe('female');
   });
 
+  it('assigns genderless without consuming RNG', () => {
+    let randomCalls = 0;
+    const party = createTestParty({
+      owner: 'player-one',
+      random: () => {
+        randomCalls += 1;
+        return 0.2;
+      },
+      pokemon: [
+        {
+          species: 'Magnezone',
+          genderMalePercentage: -1,
+          stats: {
+            attack: 70,
+            defense: 115,
+            specialAttack: 130,
+            specialDefense: 90,
+            speed: 60,
+            hp: 70,
+          },
+          type1: 'electric',
+          type2: 'steel',
+          moves: ['thunderbolt', 'growl'],
+        },
+        {
+          species: 'Raichu',
+          genderMalePercentage: 0.5,
+          stats: {
+            attack: 90,
+            defense: 55,
+            specialAttack: 90,
+            specialDefense: 80,
+            speed: 110,
+            hp: 60,
+          },
+          type1: 'electric',
+          type2: null,
+          moves: ['thunderbolt', 'growl'],
+        },
+      ],
+    });
+
+    expect(party.getPokemonByName('Magnezone')?.gender).toBe('genderless');
+    expect(party.getPokemonByName('Raichu')?.gender).toBe('male');
+    expect(randomCalls).toBe(1);
+  });
+
   it('applies a major status', () => {
     const party = createParty();
 

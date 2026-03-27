@@ -13,12 +13,7 @@
       },
       "type1": "fire",
       "type2": "flying",
-      "moves": [
-        "fire-punch",
-        "strength",
-        "earthquake",
-        "rock-slide"
-      ]
+      "moves": ["fire-punch", "strength", "earthquake", "rock-slide"]
     },
     {
       "species": "Raichu",
@@ -33,12 +28,7 @@
       },
       "type1": "electric",
       "type2": null,
-      "moves": [
-        "slam",
-        "surf",
-        "play-rough",
-        "thunderbolt"
-      ]
+      "moves": ["slam", "surf", "play-rough", "thunderbolt"]
     },
     {
       "species": "Nidoking",
@@ -53,12 +43,7 @@
       },
       "type1": "poison",
       "type2": "ground",
-      "moves": [
-        "earthquake",
-        "sludge-bomb",
-        "body-slam",
-        "horn-attack"
-      ]
+      "moves": ["earthquake", "sludge-bomb", "body-slam", "horn-attack"]
     },
     {
       "species": "Gyarados",
@@ -73,12 +58,7 @@
       },
       "type1": "water",
       "type2": "flying",
-      "moves": [
-        "ice-fang",
-        "aqua-tail",
-        "surf",
-        "strength"
-      ]
+      "moves": ["ice-fang", "aqua-tail", "surf", "strength"]
     },
     {
       "species": "Exeggutor",
@@ -93,12 +73,7 @@
       },
       "type1": "grass",
       "type2": "psychic",
-      "moves": [
-        "psychic",
-        "sludge-bomb",
-        "stun-spore",
-        "sleep-powder"
-      ]
+      "moves": ["psychic", "sludge-bomb", "stun-spore", "sleep-powder"]
     },
     {
       "species": "Fearow",
@@ -113,12 +88,7 @@
       },
       "type1": "normal",
       "type2": "flying",
-      "moves": [
-        "drill-peck",
-        "drill-run",
-        "return",
-        "sand-attack"
-      ]
+      "moves": ["drill-peck", "drill-run", "return", "sand-attack"]
     },
     {
       "species": "Lapras",
@@ -133,12 +103,22 @@
       },
       "type1": "water",
       "type2": "ice",
-      "moves": [
-        "ice-beam",
-        "water-pulse",
-        "confuse-ray",
-        "growl"
-      ]
+      "moves": ["ice-beam", "water-pulse", "confuse-ray", "growl"]
+    },
+    {
+      "species": "Magnezone",
+      "genderMalePercentage": -1,
+      "stats": {
+        "hp": 70,
+        "attack": 70,
+        "defense": 115,
+        "specialAttack": 130,
+        "specialDefense": 90,
+        "speed": 60
+      },
+      "type1": "electric",
+      "type2": "steel",
+      "moves": ["thunder-wave", "thunderbolt", "barrier", "metal-sound"]
     }
   ]
 }

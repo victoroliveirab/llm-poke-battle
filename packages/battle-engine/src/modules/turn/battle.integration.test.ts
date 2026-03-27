@@ -172,6 +172,29 @@ describe('turn battle integration', () => {
     expect(opponentBenchPokemon.gender).toBeNull();
   });
 
+  it('exposes genderless for visible Magnezone', () => {
+    const fixture = createBattleFixture();
+    fixture.selectParties(
+      ['Magnezone', 'Raichu', 'Nidoking'],
+      ['Magnezone', 'Raichu', 'Charizard'],
+    );
+
+    const playerState = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<Record<string, unknown>>;
+      opponent: Array<Record<string, unknown>>;
+    };
+    const playerActivePokemon = playerState.player[0];
+    const opponentActivePokemon = playerState.opponent[0];
+    const opponentBenchPokemon = playerState.opponent[1];
+    if (!playerActivePokemon || !opponentActivePokemon || !opponentBenchPokemon) {
+      throw new Error('Expected player and opponent party state.');
+    }
+
+    expect(playerActivePokemon.gender).toBe('genderless');
+    expect(opponentActivePokemon.gender).toBe('genderless');
+    expect(opponentBenchPokemon.gender).toBeNull();
+  });
+
   it('exposes major and volatile statuses through public player state', () => {
     const fixture = createBattleFixture();
     fixture.selectParties(

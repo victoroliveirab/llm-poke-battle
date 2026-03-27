@@ -302,6 +302,55 @@
           "stages": -1
         }
       ]
+    },
+    {
+      "id": "thunder-wave",
+      "name": "Thunder Wave",
+      "power": 0,
+      "accuracy": 100,
+      "pp": 20,
+      "type": "electric",
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "major-status",
+          "status": "paralysis",
+          "chance": 100
+        }
+      ]
+    },
+    {
+      "id": "barrier",
+      "name": "Barrier",
+      "power": 0,
+      "accuracy": 100,
+      "pp": 20,
+      "type": "psychic",
+      "class": "special",
+      "statChanges": [
+        {
+          "target": "self",
+          "stat": "defense",
+          "stages": 2
+        }
+      ]
+    },
+    {
+      "id": "metal-sound",
+      "name": "Metal Sound",
+      "power": 0,
+      "accuracy": 85,
+      "pp": 40,
+      "type": "steel",
+      "class": "special",
+      "statChanges": [
+        {
+          "target": "opponent",
+          "stat": "specialDefense",
+          "stages": -2
+        }
+      ]
     }
   ]
 }

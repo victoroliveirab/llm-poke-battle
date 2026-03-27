@@ -113,4 +113,29 @@ describe('test species fixture builders', () => {
 
     expect(party.getPokemonByName('Raichu')?.gender).toBe('female');
   });
+
+  it('allows tests to override genderless without specifying gender percentages', () => {
+    const party = createTestParty({
+      owner: 'player-one',
+      pokemon: [
+        {
+          species: 'Magnezone',
+          gender: 'genderless',
+          stats: {
+            attack: 70,
+            defense: 115,
+            specialAttack: 130,
+            specialDefense: 90,
+            speed: 60,
+            hp: 70,
+          },
+          type1: 'electric',
+          type2: 'steel',
+          moves: ['thunderbolt', 'growl'],
+        },
+      ],
+    });
+
+    expect(party.getPokemonByName('Magnezone')?.gender).toBe('genderless');
+  });
 });

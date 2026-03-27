@@ -25,7 +25,7 @@ export type PartyStats = {
   hp: number;
 };
 
-export type PokemonGender = 'male' | 'female';
+export type PokemonGender = 'male' | 'female' | 'genderless';
 
 export type PartyEntry = StatusState & {
   accuracyStage: number;
@@ -407,6 +407,10 @@ export class Party {
   }
 
   private determineGender(pokemon: PokemonSpecies): PokemonGender {
+    if (pokemon.genderMalePercentage === -1) {
+      return 'genderless';
+    }
+
     return this.random() < pokemon.genderMalePercentage ? 'male' : 'female';
   }
 }
