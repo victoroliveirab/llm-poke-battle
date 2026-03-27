@@ -40,7 +40,7 @@ export type DomainEvent =
       pokemonName: string;
       targetPokemonName: string;
       moveName: string;
-  }
+    }
   | {
       type: 'attack.already_affected';
       playerId: string;
@@ -83,6 +83,14 @@ export type DomainEvent =
       targetPokemonName: string;
       moveName: string;
       damage: number;
+    }
+  | {
+      type: 'attack.infatuated';
+      playerId: string;
+      targetPlayerId: string;
+      pokemonName: string;
+      targetPokemonName: string;
+      moveName: string;
     }
   | {
       type: 'pokemon.major_status_changed';

@@ -19,7 +19,8 @@ describe('move: Fire Punch', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(

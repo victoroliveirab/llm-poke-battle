@@ -1,10 +1,13 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { asOptionalString, asRecord } from "./parse";
-import { errorResult, type ToolResponse } from "./response";
-import type { SessionState } from "./sessionState";
-import { logger } from "./logger";
-import { toolControllerByName, toolControllers } from "./tools";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import { asOptionalString, asRecord } from './parse';
+import { errorResult, type ToolResponse } from './response';
+import type { SessionState } from './sessionState';
+import { logger } from './logger';
+import { toolControllerByName, toolControllers } from './tools';
 
 function parseMaybeJson(text: string): unknown {
   try {
@@ -22,31 +25,35 @@ type NormalizedToolResponse = {
   }>;
 };
 
-function normalizeResponseForLog(response: ToolResponse): NormalizedToolResponse {
+function normalizeResponseForLog(
+  response: ToolResponse,
+): NormalizedToolResponse {
   return {
     isError: response.isError === true,
     content: response.content.map((entry) => {
-      if (entry.type !== "text") {
+      if (entry.type !== 'text') {
         return entry;
       }
 
       return {
-        type: "text",
+        type: 'text',
         payload: parseMaybeJson(entry.text),
       };
     }),
   };
 }
 
-function extractPlayerIdFromResponse(response: NormalizedToolResponse): string | undefined {
+function extractPlayerIdFromResponse(
+  response: NormalizedToolResponse,
+): string | undefined {
   for (const entry of response.content) {
     const payload = entry.payload;
-    if (!payload || typeof payload !== "object") {
+    if (!payload || typeof payload !== 'object') {
       continue;
     }
 
     const maybePlayerId = (payload as Record<string, unknown>).player_id;
-    if (typeof maybePlayerId === "string" && maybePlayerId.length > 0) {
+    if (typeof maybePlayerId === 'string' && maybePlayerId.length > 0) {
       return maybePlayerId;
     }
   }
@@ -60,10 +67,14 @@ function resolveCallerForLog(
   normalizedResponse: NormalizedToolResponse,
 ) {
   const roomHandle = asOptionalString(args.room_handle) ?? null;
-  const membership = roomHandle ? sessionState.joinedRooms.get(roomHandle) : undefined;
+  const membership = roomHandle
+    ? sessionState.joinedRooms.get(roomHandle)
+    : undefined;
 
   const callerPlayerId =
-    membership?.playerId ?? extractPlayerIdFromResponse(normalizedResponse) ?? null;
+    membership?.playerId ??
+    extractPlayerIdFromResponse(normalizedResponse) ??
+    null;
   const callerPublicName = membership?.publicName ?? null;
 
   return {
@@ -78,7 +89,7 @@ function logToolExecution(params: {
   args: Record<string, unknown>;
   response: ToolResponse;
   elapsedMs: number;
-  status: "ok" | "error" | "unknown_tool";
+  status: 'ok' | 'error' | 'unknown_tool';
   sessionState: SessionState;
 }) {
   const normalizedResponse = normalizeResponseForLog(params.response);
@@ -90,7 +101,7 @@ function logToolExecution(params: {
 
   logger.info(
     {
-      event: "mcp_tool_call",
+      event: 'mcp_tool_call',
       tool: params.name,
       status: params.status,
       elapsed_ms: params.elapsedMs,
@@ -100,21 +111,21 @@ function logToolExecution(params: {
       args: params.args,
       response: normalizedResponse,
     },
-    "MCP tool handled",
+    'MCP tool handled',
   );
 }
 
 export function createMcpServer(sessionState: SessionState): Server {
   const server = new Server(
     {
-      name: "poke-battle",
-      version: "0.1.0"
+      name: 'poke-battle',
+      version: '0.1.0',
     },
     {
       capabilities: {
-        tools: {}
-      }
-    }
+        tools: {},
+      },
+    },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -122,8 +133,8 @@ export function createMcpServer(sessionState: SessionState): Server {
       tools: toolControllers.map((controller) => ({
         name: controller.name,
         description: controller.description,
-        inputSchema: controller.inputSchema
-      }))
+        inputSchema: controller.inputSchema,
+      })),
     };
   });
 
@@ -142,7 +153,7 @@ export function createMcpServer(sessionState: SessionState): Server {
           args,
           response,
           elapsedMs: Date.now() - startedAt,
-          status: "unknown_tool",
+          status: 'unknown_tool',
           sessionState,
         });
         return response;
@@ -154,19 +165,20 @@ export function createMcpServer(sessionState: SessionState): Server {
         args,
         response,
         elapsedMs: Date.now() - startedAt,
-        status: "ok",
+        status: 'ok',
         sessionState,
       });
       return response;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected error";
+      const message =
+        error instanceof Error ? error.message : 'Unexpected error';
       const response = errorResult(message);
       logToolExecution({
         name: toolName,
         args,
         response,
         elapsedMs: Date.now() - startedAt,
-        status: "error",
+        status: 'error',
         sessionState,
       });
       return response;

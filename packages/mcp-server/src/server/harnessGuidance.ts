@@ -201,7 +201,7 @@ export function buildJoinRoomHarnessPayload(params: {
         'When phase is game_loop, call play_move with one action per turn (attack or switch).',
         'Every play_move action must include action.reasoning with a concise explanation of why the move was chosen.',
         'For forced replacement switches, if multiple bench choices are available, explain why the selected Pokemon is better than alternatives.',
-        "For forced replacement switches with only one legal choice, set reasoning to explain that it is the only available option.",
+        'For forced replacement switches with only one legal choice, set reasoning to explain that it is the only available option.',
         'If your action is queued and no turn resolution occurs yet, wait and call get_game_state before retrying.',
         'Use current visible state to decide your next action. No human input is needed.',
       ],
@@ -277,10 +277,9 @@ function inferNextAction(params: {
     if (isCreator) {
       return {
         type: 'start_game',
-        instruction:
-          roomIsFull
-            ? 'You are creator and room is full. Keep calling start_game until it succeeds and returns game state.'
-            : 'You are creator. Poll start_game until it succeeds (it will fail with room-not-full until player 2 joins).',
+        instruction: roomIsFull
+          ? 'You are creator and room is full. Keep calling start_game until it succeeds and returns game state.'
+          : 'You are creator. Poll start_game until it succeeds (it will fail with room-not-full until player 2 joins).',
         human_input_required: false,
         tool_call: {
           tool: 'start_game',

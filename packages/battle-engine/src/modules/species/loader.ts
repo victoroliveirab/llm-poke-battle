@@ -4,7 +4,9 @@ import { attackCatalogSchema, speciesCatalogSchema, SpeciesLoader } from '.';
 
 export class DefaultLoader implements SpeciesLoader {
   load() {
-    const speciesFilePath = fileURLToPath(new URL('./catalog/v1.json', import.meta.url));
+    const speciesFilePath = fileURLToPath(
+      new URL('./catalog/v1.json', import.meta.url),
+    );
     const attacksFilePath = fileURLToPath(
       new URL('./catalog/attacks.v1.json', import.meta.url),
     );

@@ -33,6 +33,9 @@ export type VolatileStatus =
   | {
       kind: 'confusion';
       turnsRemaining: number;
+    }
+  | {
+      kind: 'infatuation';
     };
 
 const CONFUSION_MIN_DURATION = 1;
@@ -69,7 +72,9 @@ export function getStatusKind(status: AppliedStatus | StatusKind) {
   return typeof status === 'string' ? status : status.kind;
 }
 
-export function isMajorStatusKind(status: StatusKind): status is MajorStatusKind {
+export function isMajorStatusKind(
+  status: StatusKind,
+): status is MajorStatusKind {
   return (
     status === 'paralysis' ||
     status === 'burn' ||
@@ -83,7 +88,7 @@ export function isMajorStatusKind(status: StatusKind): status is MajorStatusKind
 export function isVolatileStatusKind(
   status: StatusKind,
 ): status is VolatileStatusKind {
-  return status === 'confusion';
+  return status === 'confusion' || status === 'infatuation';
 }
 
 export function cloneMajorStatus(status: MajorStatus): MajorStatus {
@@ -116,6 +121,10 @@ export function createVolatileStatus(
           Math.floor(
             random() * (CONFUSION_MAX_DURATION - CONFUSION_MIN_DURATION + 1),
           ) + CONFUSION_MIN_DURATION,
+      };
+    case 'infatuation':
+      return {
+        kind: 'infatuation',
       };
   }
 }

@@ -66,7 +66,9 @@ describe('turn battle integration', () => {
     const state = fixture.game.getStateAsPlayer('player-one') as {
       player: Array<{ moves: Array<{ name: string; remaining: number }> }>;
     };
-    const rockSlide = state.player[0]?.moves.find((move) => move.name === 'Rock Slide');
+    const rockSlide = state.player[0]?.moves.find(
+      (move) => move.name === 'Rock Slide',
+    );
     expect(rockSlide?.remaining).toBe(9);
   });
 
@@ -162,7 +164,11 @@ describe('turn battle integration', () => {
     const playerActivePokemon = playerState.player[0];
     const opponentActivePokemon = playerState.opponent[0];
     const opponentBenchPokemon = playerState.opponent[1];
-    if (!playerActivePokemon || !opponentActivePokemon || !opponentBenchPokemon) {
+    if (
+      !playerActivePokemon ||
+      !opponentActivePokemon ||
+      !opponentBenchPokemon
+    ) {
       throw new Error('Expected player and opponent party state.');
     }
 
@@ -186,7 +192,11 @@ describe('turn battle integration', () => {
     const playerActivePokemon = playerState.player[0];
     const opponentActivePokemon = playerState.opponent[0];
     const opponentBenchPokemon = playerState.opponent[1];
-    if (!playerActivePokemon || !opponentActivePokemon || !opponentBenchPokemon) {
+    if (
+      !playerActivePokemon ||
+      !opponentActivePokemon ||
+      !opponentBenchPokemon
+    ) {
       throw new Error('Expected player and opponent party state.');
     }
 
@@ -236,6 +246,20 @@ describe('turn battle integration', () => {
       },
       internals.context,
     );
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.volatile_status_changed',
+        playerId: 'player-one',
+        pokemonName: 'Charizard',
+        status: {
+          kind: 'infatuation',
+        },
+        active: true,
+        sourcePlayerId: 'player-two',
+        moveName: 'Attract',
+      },
+      internals.context,
+    );
 
     const state = fixture.game.getStateAsPlayer('player-one') as {
       player: Array<Record<string, unknown>>;
@@ -248,6 +272,7 @@ describe('turn battle integration', () => {
     expect(activePokemon.majorStatus).toEqual({ kind: 'paralysis' });
     expect(activePokemon.volatileStatuses).toEqual([
       { kind: 'confusion' },
+      { kind: 'infatuation' },
     ]);
   });
 
@@ -369,9 +394,7 @@ describe('turn battle integration', () => {
       throw new Error('Expected an active Pokemon in player state.');
     }
 
-    expect(activePokemon.volatileStatuses).toEqual([
-      { kind: 'confusion' },
-    ]);
+    expect(activePokemon.volatileStatuses).toEqual([{ kind: 'confusion' }]);
   });
 
   it('resumes an interrupted turn after a replacement switch and targets the replacement', () => {
@@ -423,7 +446,8 @@ describe('turn battle integration', () => {
 
     expect(
       interruptedEvents.some(
-        (event) => event.type === 'pokemon.fainted' && event.playerId === 'player-one',
+        (event) =>
+          event.type === 'pokemon.fainted' && event.playerId === 'player-one',
       ),
     ).toBe(true);
     expect(
@@ -455,9 +479,9 @@ describe('turn battle integration', () => {
           event.pokemonName === 'Raichu',
       ),
     ).toBe(true);
-    expect(
-      resumedEvents.some((event) => event.type === 'turn.resolved'),
-    ).toBe(true);
+    expect(resumedEvents.some((event) => event.type === 'turn.resolved')).toBe(
+      true,
+    );
     expect(fixture.game.getStateAsPlayer('player-one').turn).toBe(2);
   });
 });

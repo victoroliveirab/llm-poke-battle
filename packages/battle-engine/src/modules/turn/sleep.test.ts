@@ -23,7 +23,8 @@ describe('turn sleep status effect', () => {
 
     expect(
       result.events.some(
-        (event) => event.type === 'attack.asleep' && event.playerId === PLAYER_ONE_ID,
+        (event) =>
+          event.type === 'attack.asleep' && event.playerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(
@@ -38,7 +39,8 @@ describe('turn sleep status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(false);
     expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toEqual({
@@ -81,7 +83,8 @@ describe('turn sleep status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toBeNull();
@@ -235,7 +238,10 @@ describe('turn sleep status effect', () => {
       turnsRemaining: 3,
     };
 
-    const interruptedTurn = fixture.resolveAttackTurn('Strength', 'Sludge Bomb');
+    const interruptedTurn = fixture.resolveAttackTurn(
+      'Strength',
+      'Sludge Bomb',
+    );
     if (!interruptedTurn.suspendedTurn) {
       throw new Error('Expected the turn to suspend for a replacement switch.');
     }

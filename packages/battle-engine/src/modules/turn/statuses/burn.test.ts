@@ -1,13 +1,25 @@
 import { describe, expect, it } from 'bun:test';
 import { getActivePokemon } from '../party-state';
-import { buildPartyEntries, PLAYER_ONE_ID, PLAYER_TWO_ID } from '../test/builders/shared';
+import {
+  buildPartyEntries,
+  PLAYER_ONE_ID,
+  PLAYER_TWO_ID,
+} from '../test/builders/shared';
 import { burnStatusHandler } from './burn';
 import { MoveStatusContext, StatusContext } from './types';
 
-function createMoveStatusContext(moveClass: 'physical' | 'special'): MoveStatusContext {
+function createMoveStatusContext(
+  moveClass: 'physical' | 'special',
+): MoveStatusContext {
   const simulatedParties = new Map([
-    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
-    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
+    [
+      PLAYER_ONE_ID,
+      buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking']),
+    ],
+    [
+      PLAYER_TWO_ID,
+      buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard']),
+    ],
   ]);
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
@@ -35,8 +47,14 @@ function createMoveStatusContext(moveClass: 'physical' | 'special'): MoveStatusC
 
 function createStatusContext(): StatusContext {
   const simulatedParties = new Map([
-    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
-    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
+    [
+      PLAYER_ONE_ID,
+      buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking']),
+    ],
+    [
+      PLAYER_TWO_ID,
+      buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard']),
+    ],
   ]);
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   attacker.majorStatus = { kind: 'burn' };
@@ -55,10 +73,14 @@ describe('burn status handler', () => {
     const physicalContext = createMoveStatusContext('physical');
     const specialContext = createMoveStatusContext('special');
 
-    expect(burnStatusHandler.modifyDamage?.({ ...physicalContext, damage: 21 })).toEqual({
+    expect(
+      burnStatusHandler.modifyDamage?.({ ...physicalContext, damage: 21 }),
+    ).toEqual({
       damage: 10,
     });
-    expect(burnStatusHandler.modifyDamage?.({ ...specialContext, damage: 21 })).toEqual({
+    expect(
+      burnStatusHandler.modifyDamage?.({ ...specialContext, damage: 21 }),
+    ).toEqual({
       damage: 21,
     });
   });

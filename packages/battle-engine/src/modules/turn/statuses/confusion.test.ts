@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { getActivePokemon } from '../party-state';
-import { buildPartyEntries, PLAYER_ONE_ID, PLAYER_TWO_ID } from '../test/builders/shared';
+import {
+  buildPartyEntries,
+  PLAYER_ONE_ID,
+  PLAYER_TWO_ID,
+} from '../test/builders/shared';
 import { confusionStatusHandler } from './confusion';
 import { MoveStatusContext } from './types';
 
@@ -9,8 +13,14 @@ function createMoveStatusContext(
   turnsRemaining: number,
 ): MoveStatusContext {
   const simulatedParties = new Map([
-    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
-    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
+    [
+      PLAYER_ONE_ID,
+      buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking']),
+    ],
+    [
+      PLAYER_TWO_ID,
+      buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard']),
+    ],
   ]);
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
@@ -46,9 +56,13 @@ describe('confusion status handler', () => {
     const context = createMoveStatusContext([0.2, 0], 2);
     const startingHealth = context.attacker.health;
 
-    expect(confusionStatusHandler.beforeMove?.(context)).toEqual({ canAct: false });
+    expect(confusionStatusHandler.beforeMove?.(context)).toEqual({
+      canAct: false,
+    });
 
-    const selfHitEvent = context.events.find((event) => event.type === 'attack.confused');
+    const selfHitEvent = context.events.find(
+      (event) => event.type === 'attack.confused',
+    );
     if (!selfHitEvent || selfHitEvent.type !== 'attack.confused') {
       throw new Error('Expected an attack.confused event.');
     }
@@ -72,7 +86,9 @@ describe('confusion status handler', () => {
   it('lets the pokemon act when the self-hit check fails and still decrements duration', () => {
     const context = createMoveStatusContext([0.34], 2);
 
-    expect(confusionStatusHandler.beforeMove?.(context)).toEqual({ canAct: true });
+    expect(confusionStatusHandler.beforeMove?.(context)).toEqual({
+      canAct: true,
+    });
     expect(context.events).toEqual([
       {
         type: 'pokemon.volatile_status_updated',
@@ -92,7 +108,9 @@ describe('confusion status handler', () => {
   it('clears confusion when the duration expires and allows the pokemon to act normally', () => {
     const context = createMoveStatusContext([0.2], 1);
 
-    expect(confusionStatusHandler.beforeMove?.(context)).toEqual({ canAct: true });
+    expect(confusionStatusHandler.beforeMove?.(context)).toEqual({
+      canAct: true,
+    });
     expect(context.attacker.volatileStatuses).toEqual([]);
     expect(context.events).toEqual([
       {

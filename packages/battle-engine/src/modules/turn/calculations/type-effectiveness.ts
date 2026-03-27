@@ -1,6 +1,8 @@
 import { PokemonType } from '../../species';
 
-const typeChart: Partial<Record<PokemonType, Partial<Record<PokemonType, number>>>> = {
+const typeChart: Partial<
+  Record<PokemonType, Partial<Record<PokemonType, number>>>
+> = {
   bug: {
     dark: 2,
     fairy: 0.5,

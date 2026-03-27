@@ -95,7 +95,9 @@ export class Party {
   active() {
     const active = this.pokemon[0];
     if (!active) {
-      throw new Error(`Party for ${this.owner} does not have an active Pokemon.`);
+      throw new Error(
+        `Party for ${this.owner} does not have an active Pokemon.`,
+      );
     }
     return active;
   }
@@ -423,7 +425,9 @@ function clonePartyMove(move: PartyMove): PartyMove {
   }
 
   if (move.statusEffects) {
-    clonedMove.statusEffects = move.statusEffects.map((effect) => ({ ...effect }));
+    clonedMove.statusEffects = move.statusEffects.map((effect) => ({
+      ...effect,
+    }));
   }
 
   return clonedMove;

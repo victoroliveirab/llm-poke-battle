@@ -85,18 +85,18 @@ Options:
 One CLI process equals one MCP session/player. To run a full match without LLMs, use two terminals:
 
 1. Terminal A:
-`bun run mcp-player -- --name p1`
+   `bun run mcp-player -- --name p1`
 2. Terminal A command:
-`join`
+   `join`
 3. Copy `room_handle` from output.
 4. Terminal B:
-`bun run mcp-player -- --name p2 --room <room_handle>`
+   `bun run mcp-player -- --name p2 --room <room_handle>`
 5. Terminal A command:
-`start`
+   `start`
 6. Both terminals command:
-`party <p1> <p2> <p3>`
+   `party <p1> <p2> <p3>`
 7. Both terminals command each turn:
-`move attack <attackName>` or `move switch <pokemonName>`
+   `move attack <attackName>` or `move switch <pokemonName>`
 
 The CLI shows a guided action menu every loop and uses a `>>` prompt to select actions (numeric shortcuts), while still accepting free-form commands.
 
@@ -140,11 +140,13 @@ Minimal flow:
 4. Stop only when phase is `game_over` and final state has been fetched.
 
 `select_party` requires four non-empty reasoning fields:
+
 - `p1_reason`, `p2_reason`, `p3_reason` for each pick.
 - `lead_reason` specifically explaining why `p1` is chosen as the opening lead.
 
 `play_move` requires `action.reasoning` (non-empty string) for both `attack` and `switch`.
 For forced replacement switches:
+
 - If multiple legal replacements exist, reasoning should explain why the selected Pokemon is preferred.
 - If only one legal replacement exists, reasoning should state it is the only legal option.
 

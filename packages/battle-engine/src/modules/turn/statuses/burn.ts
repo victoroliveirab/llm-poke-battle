@@ -21,7 +21,10 @@ export const burnStatusHandler: StatusHandler = {
       return;
     }
 
-    const damage = Math.max(1, Math.floor(pokemon.stats.hp / BURN_RESIDUAL_DIVISOR));
+    const damage = Math.max(
+      1,
+      Math.floor(pokemon.stats.hp / BURN_RESIDUAL_DIVISOR),
+    );
     pokemon.health = Math.max(0, pokemon.health - damage);
 
     ctx.events.push({

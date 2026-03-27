@@ -180,7 +180,9 @@ function parseSubmittedTurnAction(
   throw new Error(`Unknown action type '${actionType}'.`);
 }
 
-function capturePreTurnActivePokemonByPlayerId(room: Room): Map<string, string> {
+function capturePreTurnActivePokemonByPlayerId(
+  room: Room,
+): Map<string, string> {
   const activePokemonByPlayerId = new Map<string, string>();
   if (!room.game) {
     return activePokemonByPlayerId;

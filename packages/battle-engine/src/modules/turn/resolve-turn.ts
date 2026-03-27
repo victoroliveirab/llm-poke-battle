@@ -289,7 +289,10 @@ function performAttackIfPossible(
   attackerAction: TurnAction,
   defenderAction: TurnAction,
   simulatedParties: Map<string, PartyEntry[]>,
-  params: Pick<ResolveTurnParams, 'getSpecies' | 'random' | 'statusHandlerRegistry'>,
+  params: Pick<
+    ResolveTurnParams,
+    'getSpecies' | 'random' | 'statusHandlerRegistry'
+  >,
   events: DomainEvent[],
 ) {
   return executeMove({
@@ -307,7 +310,10 @@ function performActionIfPossible(
   attackerAction: TurnAction,
   defenderAction: TurnAction,
   simulatedParties: Map<string, PartyEntry[]>,
-  params: Pick<ResolveTurnParams, 'getSpecies' | 'random' | 'statusHandlerRegistry'>,
+  params: Pick<
+    ResolveTurnParams,
+    'getSpecies' | 'random' | 'statusHandlerRegistry'
+  >,
   events: DomainEvent[],
 ) {
   if (attackerAction.action.type === 'switch') {

@@ -59,7 +59,11 @@ export function applyStageEffect(params: ApplyStageEffectParams) {
   return true;
 }
 
-function getClampedStageAfterDelta(currentStage: number, stat: StageStat, delta: number) {
+function getClampedStageAfterDelta(
+  currentStage: number,
+  stat: StageStat,
+  delta: number,
+) {
   const nextStage = currentStage + Math.trunc(delta);
   if (stat === 'critical') {
     return clampCriticalStage(nextStage);
@@ -91,7 +95,11 @@ function getPokemonStageValue(pokemon: PartyEntry, stat: StageStat) {
   return pokemon.specialDefenseStage;
 }
 
-function setPokemonStageValue(pokemon: PartyEntry, stat: StageStat, nextStage: number) {
+function setPokemonStageValue(
+  pokemon: PartyEntry,
+  stat: StageStat,
+  nextStage: number,
+) {
   if (stat === 'accuracy') {
     pokemon.accuracyStage = nextStage;
     return;

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { createSessionState, type SessionState } from '../sessionState';
-import { getRoom, listRoomTurnSnapshots } from '../rooms';
+import {
+  captureRoomTurnSnapshot,
+  getRoom,
+  listRoomTurnSnapshots,
+} from '../rooms';
 import { selectPartyController } from './selectPartyController';
 import { joinRoomController } from './joinRoomController';
 import { playMoveController } from './playMoveController';
@@ -13,25 +17,27 @@ type SessionSetup = {
 };
 
 type MutableParty = {
-  getPokemonByName: (name: string) => {
-    moves: Array<{
-      name: string;
-      accuracy: number;
-      power: number;
-      statChanges?: Array<{
-        target: 'self' | 'opponent';
-        stat:
-          | 'accuracy'
-          | 'attack'
-          | 'critical'
-          | 'defense'
-          | 'evasion'
-          | 'specialAttack'
-          | 'specialDefense';
-        stages: number;
-      }>;
-    }>;
-  } | undefined;
+  getPokemonByName: (name: string) =>
+    | {
+        moves: Array<{
+          name: string;
+          accuracy: number;
+          power: number;
+          statChanges?: Array<{
+            target: 'self' | 'opponent';
+            stat:
+              | 'accuracy'
+              | 'attack'
+              | 'critical'
+              | 'defense'
+              | 'evasion'
+              | 'specialAttack'
+              | 'specialDefense';
+            stages: number;
+          }>;
+        }>;
+      }
+    | undefined;
 };
 
 function parseJsonPayload(responseText: string): Record<string, unknown> {
@@ -74,13 +80,19 @@ async function setupGameLoop(): Promise<SessionSetup> {
     p2: 'Raichu',
     p3: 'Nidoking',
     p1_reason: 'Lead with Charizard for immediate pressure and broad coverage.',
-    p2_reason: 'Raichu gives speed control and electric coverage from the bench.',
-    p3_reason: 'Nidoking provides physical coverage and mid-game pivot options.',
+    p2_reason:
+      'Raichu gives speed control and electric coverage from the bench.',
+    p3_reason:
+      'Nidoking provides physical coverage and mid-game pivot options.',
     lead_reason:
       'Charizard opens because it has the safest opening attacks into most matchups and establishes tempo.',
   };
-  await selectPartyController.handle(partyArgs, { sessionState: player1Session });
-  await selectPartyController.handle(partyArgs, { sessionState: player2Session });
+  await selectPartyController.handle(partyArgs, {
+    sessionState: player1Session,
+  });
+  await selectPartyController.handle(partyArgs, {
+    sessionState: player2Session,
+  });
 
   return {
     roomHandle,
@@ -251,12 +263,12 @@ describe('play_move reasoning requirement', () => {
       (entry) => entry.type === 'attack',
     );
     expect(attackTimeline.length).toBeGreaterThanOrEqual(2);
-    expect(attackTimeline.some((entry) => entry.reasoning === player1Reasoning)).toBe(
-      true,
-    );
-    expect(attackTimeline.some((entry) => entry.reasoning === player2Reasoning)).toBe(
-      true,
-    );
+    expect(
+      attackTimeline.some((entry) => entry.reasoning === player1Reasoning),
+    ).toBe(true);
+    expect(
+      attackTimeline.some((entry) => entry.reasoning === player2Reasoning),
+    ).toBe(true);
     expect(
       attackTimeline.every((entry) => typeof entry.critical === 'boolean'),
     ).toBe(true);
@@ -318,13 +330,135 @@ describe('play_move reasoning requirement', () => {
     expect(snapshot.player1.bench[1]?.gender).toBe('male');
   });
 
+  it('records infatuation application and immobilized-by-love outcomes in turn snapshots', async () => {
+    const setup = await setupGameLoop();
+    const room = getRoom(setup.roomHandle);
+    if (!room || !room.game) {
+      throw new Error(
+        'Expected room game to exist for infatuation snapshot assertions.',
+      );
+    }
+
+    const player1Id = setup.player1Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
+    if (!player1Id || !player2Id) {
+      throw new Error(
+        'Expected player ids for infatuation snapshot assertions.',
+      );
+    }
+
+    const internals = room.game as unknown as {
+      context: unknown;
+      partyModule: {
+        onEvent: (event: unknown, context: unknown) => unknown[];
+      };
+    };
+    internals.partyModule.onEvent(
+      {
+        type: 'pokemon.volatile_status_changed',
+        playerId: player2Id,
+        pokemonName: 'Charizard',
+        status: {
+          kind: 'infatuation',
+        },
+        active: true,
+        sourcePlayerId: player1Id,
+        moveName: 'Attract',
+      },
+      internals.context,
+    );
+
+    type ResolutionDetails = NonNullable<
+      Parameters<typeof captureRoomTurnSnapshot>[2]
+    >;
+    const resolutionDetails: ResolutionDetails = {
+      emittedEvents: [
+        {
+          type: 'pokemon.volatile_status_changed',
+          playerId: player2Id,
+          pokemonName: 'Charizard',
+          status: {
+            kind: 'infatuation',
+          },
+          active: true,
+          sourcePlayerId: player1Id,
+          moveName: 'Attract',
+        },
+        {
+          type: 'attack.infatuated',
+          playerId: player2Id,
+          targetPlayerId: player1Id,
+          pokemonName: 'Charizard',
+          targetPokemonName: 'Charizard',
+          moveName: 'Strength',
+        },
+      ],
+      preTurnActivePokemonByPlayerId: new Map([
+        [player1Id, 'Charizard'],
+        [player2Id, 'Charizard'],
+      ]),
+      submittedActionsByPlayerId: new Map([
+        [
+          player1Id,
+          {
+            type: 'attack',
+            attackName: 'Attract',
+            reasoning: 'Apply infatuation before the opponent can respond.',
+          },
+        ],
+        [
+          player2Id,
+          {
+            type: 'attack',
+            attackName: 'Strength',
+            reasoning: 'Attack if infatuation does not block the move.',
+          },
+        ],
+      ]),
+      pendingInterTurnSwitchesByPlayerId: new Map(),
+    };
+
+    const snapshot = captureRoomTurnSnapshot(room, 1, resolutionDetails);
+
+    expect(snapshot.player2.active.volatileStatuses).toEqual([
+      { kind: 'infatuation' },
+    ]);
+    expect(
+      snapshot.actions.timeline.some(
+        (entry) =>
+          entry.type === 'attack' &&
+          entry.playerId === player1Id &&
+          entry.outcome === 'status' &&
+          entry.status === 'infatuation' &&
+          entry.active === true,
+      ),
+    ).toBe(true);
+    expect(
+      snapshot.actions.timeline.some(
+        (entry) =>
+          entry.type === 'attack' &&
+          entry.playerId === player2Id &&
+          entry.outcome === 'infatuated' &&
+          entry.reasoning === 'Attack if infatuation does not block the move.',
+      ),
+    ).toBe(true);
+  });
+
   it('includes burn residual damage in turn snapshots', async () => {
     const setup = await setupGameLoop();
     const room = getRoom(setup.roomHandle);
     if (!room || !room.game) {
-      throw new Error('Expected room game to exist for burn snapshot assertions.');
+      throw new Error(
+        'Expected room game to exist for burn snapshot assertions.',
+      );
     }
-    const playerTwoId = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    const playerTwoId = setup.player2Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
     if (!playerTwoId) {
       throw new Error('Expected player two id for burn snapshot assertions.');
     }
@@ -368,7 +502,8 @@ describe('play_move reasoning requirement', () => {
         room_handle: setup.roomHandle,
         action: {
           type: 'attack',
-          reasoning: 'Attempt a miss so burn damage is the only chip this turn.',
+          reasoning:
+            'Attempt a miss so burn damage is the only chip this turn.',
           payload: {
             attackName: 'Strength',
           },
@@ -404,8 +539,12 @@ describe('play_move reasoning requirement', () => {
     if (!room || !room.game) {
       throw new Error('Expected room game to exist for miss assertions.');
     }
-    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;
-    const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    const player1Id = setup.player1Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
     if (!player1Id || !player2Id) {
       throw new Error('Expected player ids for miss assertions.');
     }
@@ -463,11 +602,15 @@ describe('play_move reasoning requirement', () => {
     }
 
     expect(snapshot.actions.player1.attackOutcome?.executed).toBe(false);
-    expect(snapshot.actions.player1.attackOutcome?.targetPokemon).toBe('Charizard');
+    expect(snapshot.actions.player1.attackOutcome?.targetPokemon).toBe(
+      'Charizard',
+    );
     expect(snapshot.actions.player1.attackOutcome?.damage).toBe(0);
     expect(snapshot.actions.player1.attackOutcome?.critical).toBe(false);
     expect(snapshot.actions.player2.attackOutcome?.executed).toBe(false);
-    expect(snapshot.actions.player2.attackOutcome?.targetPokemon).toBe('Charizard');
+    expect(snapshot.actions.player2.attackOutcome?.targetPokemon).toBe(
+      'Charizard',
+    );
     expect(snapshot.actions.player2.attackOutcome?.damage).toBe(0);
     expect(snapshot.actions.player2.attackOutcome?.critical).toBe(false);
 
@@ -499,12 +642,20 @@ describe('play_move reasoning requirement', () => {
     const setup = await setupGameLoop();
     const room = getRoom(setup.roomHandle);
     if (!room || !room.game) {
-      throw new Error('Expected room game to exist for non-damaging attack assertions.');
+      throw new Error(
+        'Expected room game to exist for non-damaging attack assertions.',
+      );
     }
-    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;
-    const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    const player1Id = setup.player1Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
     if (!player1Id || !player2Id) {
-      throw new Error('Expected player ids for non-damaging attack assertions.');
+      throw new Error(
+        'Expected player ids for non-damaging attack assertions.',
+      );
     }
     const internals = room.game as unknown as {
       partyModule: {
@@ -580,7 +731,9 @@ describe('play_move reasoning requirement', () => {
 
     const snapshot = listRoomTurnSnapshots(room, 1)[0];
     if (!snapshot) {
-      throw new Error('Expected turn 1 snapshot for non-damaging attack assertions.');
+      throw new Error(
+        'Expected turn 1 snapshot for non-damaging attack assertions.',
+      );
     }
 
     expect(snapshot.actions.player1.attackOutcome?.executed).toBe(true);
@@ -612,8 +765,12 @@ describe('play_move reasoning requirement', () => {
 
   it('keeps reasoning for non-executed attacks and inter-turn replacement switches', async () => {
     const setup = await setupGameLoop();
-    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;
-    const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    const player1Id = setup.player1Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
     if (!player1Id || !player2Id) {
       throw new Error('Expected joined player ids in session state.');
     }
@@ -664,12 +821,12 @@ describe('play_move reasoning requirement', () => {
       const attackTimeline = turnSnapshot.actions.timeline.filter(
         (entry) => entry.type === 'attack',
       );
-      expect(attackTimeline.some((entry) => entry.reasoning === turnReasonP1)).toBe(
-        true,
-      );
-      expect(attackTimeline.some((entry) => entry.reasoning === turnReasonP2)).toBe(
-        true,
-      );
+      expect(
+        attackTimeline.some((entry) => entry.reasoning === turnReasonP1),
+      ).toBe(true);
+      expect(
+        attackTimeline.some((entry) => entry.reasoning === turnReasonP2),
+      ).toBe(true);
 
       const fainted = turnSnapshot.actions.fainted[0];
       if (fainted) {
@@ -680,7 +837,9 @@ describe('play_move reasoning requirement', () => {
     }
 
     if (!faintedEntry) {
-      throw new Error('Expected one fainted Pokemon after repeated guaranteed-hit turns.');
+      throw new Error(
+        'Expected one fainted Pokemon after repeated guaranteed-hit turns.',
+      );
     }
     const faintedSession =
       faintedEntry.playerId === player1Id
@@ -712,7 +871,8 @@ describe('play_move reasoning requirement', () => {
         room_handle: setup.roomHandle,
         action: {
           type: 'attack',
-          reasoning: 'Replacement side now attacks to progress turn resolution.',
+          reasoning:
+            'Replacement side now attacks to progress turn resolution.',
           payload: {
             attackName: 'Surf',
           },
@@ -746,12 +906,13 @@ describe('play_move reasoning requirement', () => {
       throw new Error('Expected replacement turn snapshot.');
     }
 
-    const replacementSwitchInTimeline = turnAfterReplacementSnapshot.actions.timeline.find(
-      (entry) =>
-        entry.type === 'switch' &&
-        entry.playerId === faintedEntry.playerId &&
-        entry.reasoning === replacementReason,
-    );
+    const replacementSwitchInTimeline =
+      turnAfterReplacementSnapshot.actions.timeline.find(
+        (entry) =>
+          entry.type === 'switch' &&
+          entry.playerId === faintedEntry.playerId &&
+          entry.reasoning === replacementReason,
+      );
     expect(replacementSwitchInTimeline).toBeDefined();
   });
 });

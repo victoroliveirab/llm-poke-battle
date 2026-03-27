@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { createMoveFixture } from './test/builders/move-fixture';
-import {
-  getDamageAppliedEvent,
-  PLAYER_ONE_ID,
-} from './test/builders/shared';
+import { getDamageAppliedEvent, PLAYER_ONE_ID } from './test/builders/shared';
 
 describe('turn critical hit resolution', () => {
   it('marks damage events with critical=false when crit check fails', () => {

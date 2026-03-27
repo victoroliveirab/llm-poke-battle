@@ -1,14 +1,11 @@
-import {
-  AppliedMoveStatus,
-  MoveExecutionContext,
-  MoveEffect,
-} from '../types';
+import { AppliedMoveStatus, MoveExecutionContext, MoveEffect } from '../types';
 import {
   createMajorStatus,
   createVolatileStatus,
   hasVolatileStatus,
 } from '../../status-state';
 import { PokemonSpecies } from '../../../species';
+import { PartyEntry, PokemonGender } from '../../../party/party';
 
 type StatusEffect = Extract<MoveEffect, { kind: 'apply-status' }>;
 
@@ -20,7 +17,9 @@ type ApplyStatusEffectParams = {
 
 export function applyStatusEffect(params: ApplyStatusEffectParams) {
   const isSelfTarget = params.effect.target === 'self';
-  const targetPokemon = isSelfTarget ? params.context.attacker : params.context.defender;
+  const targetPokemon = isSelfTarget
+    ? params.context.attacker
+    : params.context.defender;
   const targetSpecies = isSelfTarget
     ? params.context.attackerSpecies
     : params.context.defenderSpecies;
@@ -61,7 +60,14 @@ export function applyStatusEffect(params: ApplyStatusEffectParams) {
     return;
   }
 
-  if (isImmuneToStatus(params.effect.status, targetSpecies)) {
+  if (
+    isImmuneToStatus(params.effect.status, targetSpecies) ||
+    isIncompatibleWithTarget(
+      params.effect.status,
+      params.context.attacker,
+      targetPokemon,
+    )
+  ) {
     if (params.isStatusOnlyMove) {
       params.context.events.push({
         type: 'attack.missed',
@@ -142,4 +148,27 @@ function isImmuneToStatus(
     targetSpecies.type1 === 'steel' ||
     targetSpecies.type2 === 'steel'
   );
+}
+
+function isIncompatibleWithTarget(
+  status: AppliedMoveStatus,
+  attacker: Pick<PartyEntry, 'gender'>,
+  target: Pick<PartyEntry, 'gender'>,
+) {
+  return (
+    status.kind === 'volatile-status' &&
+    status.status === 'infatuation' &&
+    !canInfatuate(attacker.gender, target.gender)
+  );
+}
+
+function canInfatuate(
+  attackerGender: PokemonGender,
+  targetGender: PokemonGender,
+) {
+  if (attackerGender === 'genderless' || targetGender === 'genderless') {
+    return false;
+  }
+
+  return attackerGender !== targetGender;
 }

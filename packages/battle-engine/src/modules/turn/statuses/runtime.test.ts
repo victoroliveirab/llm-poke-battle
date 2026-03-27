@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import { getActivePokemon } from '../party-state';
-import { buildPartyEntries, PLAYER_ONE_ID, PLAYER_TWO_ID } from '../test/builders/shared';
+import {
+  buildPartyEntries,
+  PLAYER_ONE_ID,
+  PLAYER_TWO_ID,
+} from '../test/builders/shared';
 import {
   getStatusHandlers,
   runAfterMoveHooks,
@@ -8,12 +12,22 @@ import {
   runEndTurnHooks,
   runModifyDamageHooks,
 } from './runtime';
-import { MoveStatusContext, StatusContext, StatusHandlerRegistry } from './types';
+import {
+  MoveStatusContext,
+  StatusContext,
+  StatusHandlerRegistry,
+} from './types';
 
 function createMoveStatusContext(): MoveStatusContext {
   const simulatedParties = new Map([
-    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
-    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
+    [
+      PLAYER_ONE_ID,
+      buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking']),
+    ],
+    [
+      PLAYER_TWO_ID,
+      buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard']),
+    ],
   ]);
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
@@ -39,8 +53,14 @@ function createMoveStatusContext(): MoveStatusContext {
 
 function createStatusContext(): StatusContext {
   const simulatedParties = new Map([
-    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
-    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard'])],
+    [
+      PLAYER_ONE_ID,
+      buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking']),
+    ],
+    [
+      PLAYER_TWO_ID,
+      buildPartyEntries(PLAYER_TWO_ID, ['Exeggutor', 'Fearow', 'Charizard']),
+    ],
   ]);
 
   return {
@@ -56,7 +76,9 @@ describe('status runtime', () => {
   it('safely skips statuses that have no registered handlers', () => {
     const context = createMoveStatusContext();
     context.attacker.majorStatus = { kind: 'burn' };
-    context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
+    context.attacker.volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 2 },
+    ];
 
     expect(
       runBeforeMoveHooks({
@@ -78,7 +100,9 @@ describe('status runtime', () => {
   it('runs handlers in deterministic major-then-volatile order', () => {
     const context = createMoveStatusContext();
     context.attacker.majorStatus = { kind: 'burn' };
-    context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 3 }];
+    context.attacker.volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 3 },
+    ];
     const calls: string[] = [];
 
     const registry = {
@@ -96,10 +120,9 @@ describe('status runtime', () => {
       },
     } satisfies StatusHandlerRegistry;
 
-    expect(getStatusHandlers(context.attacker, registry).map((entry) => entry.kind)).toEqual([
-      'burn',
-      'confusion',
-    ]);
+    expect(
+      getStatusHandlers(context.attacker, registry).map((entry) => entry.kind),
+    ).toEqual(['burn', 'confusion']);
 
     runBeforeMoveHooks({
       context,
@@ -129,7 +152,9 @@ describe('status runtime', () => {
       },
     } satisfies StatusHandlerRegistry;
 
-    context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
+    context.attacker.volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 2 },
+    ];
 
     expect(
       runBeforeMoveHooks({
@@ -166,7 +191,9 @@ describe('status runtime', () => {
   it('applies multiple modifyDamage hooks in deterministic major-then-volatile order', () => {
     const context = createMoveStatusContext();
     context.attacker.majorStatus = { kind: 'burn' };
-    context.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
+    context.attacker.volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 2 },
+    ];
     const calls: string[] = [];
 
     const registry = {
@@ -199,8 +226,13 @@ describe('status runtime', () => {
     const moveContext = createMoveStatusContext();
     const statusContext = createStatusContext();
     moveContext.attacker.majorStatus = { kind: 'burn' };
-    moveContext.attacker.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
-    const statusPokemon = getActivePokemon(statusContext.simulatedParties, PLAYER_ONE_ID);
+    moveContext.attacker.volatileStatuses = [
+      { kind: 'confusion', turnsRemaining: 2 },
+    ];
+    const statusPokemon = getActivePokemon(
+      statusContext.simulatedParties,
+      PLAYER_ONE_ID,
+    );
     statusPokemon.majorStatus = { kind: 'burn' };
     statusPokemon.volatileStatuses = [{ kind: 'confusion', turnsRemaining: 2 }];
     const calls: string[] = [];

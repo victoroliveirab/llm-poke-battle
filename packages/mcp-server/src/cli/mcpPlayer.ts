@@ -98,11 +98,9 @@ class HttpMcpClient implements McpClient {
     }
 
     return {
-      tools: result.tools
-        .filter(isRecord)
-        .map((entry) => ({
-          name: typeof entry.name === 'string' ? entry.name : 'unknown',
-        })),
+      tools: result.tools.filter(isRecord).map((entry) => ({
+        name: typeof entry.name === 'string' ? entry.name : 'unknown',
+      })),
     };
   }
 
@@ -260,7 +258,9 @@ async function main() {
   let lastResult: LastResult | null = null;
 
   console.log(`Connected to MCP server: ${options.server}`);
-  console.log('Interactive mode enabled. Use the menu or type commands directly.');
+  console.log(
+    'Interactive mode enabled. Use the menu or type commands directly.',
+  );
 
   try {
     const toolResult = await withTimeout(
@@ -616,7 +616,9 @@ function printActionMenu() {
   console.log('  9) list tools');
   console.log(' 10) show last result');
   console.log('  0) quit');
-  console.log('  You can also type any command directly (e.g. "join", "/state").');
+  console.log(
+    '  You can also type any command directly (e.g. "join", "/state").',
+  );
 }
 
 async function invokeTool(
@@ -705,7 +707,9 @@ function printToolResult(result: LastResult) {
   }
 
   const status = result.isError ? 'error' : 'ok';
-  console.log(`[${status}] tool=${result.toolName} elapsed_ms=${result.elapsedMs}`);
+  console.log(
+    `[${status}] tool=${result.toolName} elapsed_ms=${result.elapsedMs}`,
+  );
   console.log(`args=${JSON.stringify(result.args)}`);
 
   const battleState = extractBattleState(result.parsedJson);
@@ -777,7 +781,9 @@ function printBattleSummary(state: Record<string, unknown>) {
   }
 }
 
-function getActivePokemonSummary(value: unknown): { name: string; hp: string } | null {
+function getActivePokemonSummary(
+  value: unknown,
+): { name: string; hp: string } | null {
   if (!Array.isArray(value)) {
     return null;
   }

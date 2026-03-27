@@ -20,13 +20,15 @@ describe('turn freeze status effect', () => {
 
     expect(
       events.some(
-        (event) => event.type === 'attack.frozen' && event.playerId === PLAYER_ONE_ID,
+        (event) =>
+          event.type === 'attack.frozen' && event.playerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(false);
   });
@@ -62,7 +64,8 @@ describe('turn freeze status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toBeNull();
@@ -85,7 +88,9 @@ describe('turn freeze status effect', () => {
       fixture.attack(PLAYER_TWO_ID, 'Sludge Bomb'),
     );
     const party = fixture.simulatedParties.get(PLAYER_ONE_ID);
-    const switchedOutPokemon = party?.find((pokemon) => pokemon.name === 'Charizard');
+    const switchedOutPokemon = party?.find(
+      (pokemon) => pokemon.name === 'Charizard',
+    );
 
     expect(
       result.events.some(
@@ -119,7 +124,9 @@ describe('turn freeze status effect', () => {
       fixture.attack(PLAYER_TWO_ID, 'Sludge Bomb'),
     );
     const party = fixture.simulatedParties.get(PLAYER_ONE_ID);
-    const switchedOutPokemon = party?.find((pokemon) => pokemon.name === 'Charizard');
+    const switchedOutPokemon = party?.find(
+      (pokemon) => pokemon.name === 'Charizard',
+    );
 
     expect(switchedOutPokemon?.majorStatus).toEqual({ kind: 'paralysis' });
     expect(switchedOutPokemon?.volatileStatuses).toEqual([]);
@@ -156,7 +163,8 @@ describe('turn freeze status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(
@@ -212,7 +220,8 @@ describe('turn freeze status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(fixture.getActivePokemon(PLAYER_ONE_ID).majorStatus).toBeNull();

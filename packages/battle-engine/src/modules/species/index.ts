@@ -13,7 +13,7 @@ const majorStatusValues = [
   'poison',
   'badly-poisoned',
 ] as const;
-const volatileStatusValues = ['confusion'] as const;
+const volatileStatusValues = ['confusion', 'infatuation'] as const;
 const statusTargetSchema = z.enum(['self', 'opponent']);
 const statusChanceSchema = z.number();
 const majorStatusEffectSchema = z.object({
@@ -99,7 +99,9 @@ export type PokemonCatalog = z.infer<typeof speciesCatalogSchema>['options'];
 export type AttackCatalog = z.infer<typeof attackCatalogSchema>['options'];
 export type AttackDefinition = z.infer<typeof attackDefinitionSchema>;
 export type AttackStatusEffect = z.infer<typeof catalogStatusEffectSchema>;
-export type AttackStatChange = NonNullable<AttackDefinition['statChanges']>[number];
+export type AttackStatChange = NonNullable<
+  AttackDefinition['statChanges']
+>[number];
 export type PokemonSpecies = z.infer<typeof catalogOptionSchema>;
 export type PokemonType = z.infer<typeof pokemonTypeEnum>;
 export type SpeciesData = {
@@ -139,7 +141,9 @@ export class SpeciesModule implements EngineModule {
 
     for (const attack of attacks) {
       if (byAttackId.has(attack.id)) {
-        throw new Error(`Attack ${attack.id} is duplicated in the attack catalog.`);
+        throw new Error(
+          `Attack ${attack.id} is duplicated in the attack catalog.`,
+        );
       }
 
       byAttackId.set(attack.id, attack);
@@ -147,7 +151,9 @@ export class SpeciesModule implements EngineModule {
 
     for (const entry of species) {
       if (bySpecies.has(entry.species)) {
-        throw new Error(`Pokemon ${entry.species} is duplicated in the species catalog.`);
+        throw new Error(
+          `Pokemon ${entry.species} is duplicated in the species catalog.`,
+        );
       }
 
       for (const attackId of entry.moves) {

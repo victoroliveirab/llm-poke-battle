@@ -62,7 +62,10 @@ describe('turn attack resolution', () => {
     lowAccuracyFixture.setActivePokemonStages(PLAYER_ONE_ID, { accuracy: -6 });
     lowAccuracyFixture.setActivePokemonStages('player-two', { evasion: 6 });
 
-    const missEvents = lowAccuracyFixture.execute('Fire Punch', 'Sludge Bomb').events;
+    const missEvents = lowAccuracyFixture.execute(
+      'Fire Punch',
+      'Sludge Bomb',
+    ).events;
     expect(
       missEvents.some(
         (event) =>
@@ -80,7 +83,10 @@ describe('turn attack resolution', () => {
     highAccuracyFixture.setActivePokemonStages(PLAYER_ONE_ID, { accuracy: 6 });
     highAccuracyFixture.setActivePokemonStages('player-two', { evasion: -6 });
 
-    const hitEvents = highAccuracyFixture.execute('Fire Punch', 'Sludge Bomb').events;
+    const hitEvents = highAccuracyFixture.execute(
+      'Fire Punch',
+      'Sludge Bomb',
+    ).events;
     expect(
       hitEvents.some(
         (event) =>
@@ -177,7 +183,9 @@ describe('turn attack resolution', () => {
         },
       } satisfies StatusHandlerRegistry,
     });
-    modifiedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'burn' };
+    modifiedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = {
+      kind: 'burn',
+    };
     const defender = modifiedFixture.getActivePokemon('player-two');
     const initialHealth = defender.health;
 
@@ -192,8 +200,14 @@ describe('turn attack resolution', () => {
 
   it('executes moves from copied party state after party creation', () => {
     const simulatedParties = new Map([
-      [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking'])],
-      [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Nidoking', 'Raichu', 'Charizard'])],
+      [
+        PLAYER_ONE_ID,
+        buildPartyEntries(PLAYER_ONE_ID, ['Charizard', 'Raichu', 'Nidoking']),
+      ],
+      [
+        PLAYER_TWO_ID,
+        buildPartyEntries(PLAYER_TWO_ID, ['Nidoking', 'Raichu', 'Charizard']),
+      ],
     ]);
     const events: DomainEvent[] = [];
 
@@ -234,7 +248,9 @@ describe('turn attack resolution', () => {
     const burnedFixture = createMoveFixture({
       randomSequence: [0, 0.9, 0],
     });
-    burnedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = { kind: 'burn' };
+    burnedFixture.getActivePokemon(PLAYER_ONE_ID).majorStatus = {
+      kind: 'burn',
+    };
     const burnedDamage = getDamageAppliedEvent(
       burnedFixture.execute('Strength', 'Sludge Bomb').events,
       PLAYER_ONE_ID,

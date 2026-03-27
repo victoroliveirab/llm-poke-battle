@@ -50,10 +50,13 @@ export function getStatusHandlers(
   return registrations;
 }
 
-export function runBeforeMoveHooks(
-  params: RuntimeParams<MoveStatusContext>,
-): { canAct: boolean } {
-  for (const { handler } of getStatusHandlers(params.pokemon, params.registry)) {
+export function runBeforeMoveHooks(params: RuntimeParams<MoveStatusContext>): {
+  canAct: boolean;
+} {
+  for (const { handler } of getStatusHandlers(
+    params.pokemon,
+    params.registry,
+  )) {
     const result = handler.beforeMove?.(params.context);
     if (result && !result.canAct) {
       return { canAct: false };
@@ -70,7 +73,10 @@ export function runModifyDamageHooks(
 ): ModifyDamageResult {
   let damage = params.damage;
 
-  for (const { handler } of getStatusHandlers(params.pokemon, params.registry)) {
+  for (const { handler } of getStatusHandlers(
+    params.pokemon,
+    params.registry,
+  )) {
     const result = handler.modifyDamage?.({
       ...params.context,
       damage,
@@ -85,14 +91,20 @@ export function runModifyDamageHooks(
 }
 
 export function runAfterMoveHooks(params: RuntimeParams<MoveStatusContext>) {
-  for (const { handler } of getStatusHandlers(params.pokemon, params.registry)) {
+  for (const { handler } of getStatusHandlers(
+    params.pokemon,
+    params.registry,
+  )) {
     handler.afterMove?.(params.context);
   }
 }
 
 // End-turn hooks run after move hooks and before winner evaluation.
 export function runEndTurnHooks(params: RuntimeParams<StatusContext>) {
-  for (const { handler } of getStatusHandlers(params.pokemon, params.registry)) {
+  for (const { handler } of getStatusHandlers(
+    params.pokemon,
+    params.registry,
+  )) {
     handler.endTurn?.(params.context);
   }
 }

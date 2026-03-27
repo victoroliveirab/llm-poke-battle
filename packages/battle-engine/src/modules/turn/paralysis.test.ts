@@ -31,7 +31,8 @@ describe('turn paralysis status effect', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(false);
   });
@@ -96,7 +97,8 @@ describe('turn paralysis status effect', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_TWO_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_TWO_ID,
       ),
     ).toBe(false);
   });
@@ -118,14 +120,18 @@ describe('turn paralysis status effect', () => {
     noParalysisFixture.setActivePokemonHealth(PLAYER_ONE_ID, 1);
     noParalysisFixture.setActivePokemonHealth(PLAYER_TWO_ID, 1);
 
-    const noParalysisTurn = noParalysisFixture.resolveAttackTurn('Strength', 'Drill Peck');
+    const noParalysisTurn = noParalysisFixture.resolveAttackTurn(
+      'Strength',
+      'Drill Peck',
+    );
     expect(
       getDamageAppliedEvent(noParalysisTurn.events, PLAYER_ONE_ID).damage,
     ).toBeGreaterThan(0);
     expect(
       noParalysisTurn.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_TWO_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_TWO_ID,
       ),
     ).toBe(false);
 
@@ -148,14 +154,18 @@ describe('turn paralysis status effect', () => {
       kind: 'paralysis',
     });
 
-    const paralysisTurn = paralysisFixture.resolveAttackTurn('Strength', 'Drill Peck');
+    const paralysisTurn = paralysisFixture.resolveAttackTurn(
+      'Strength',
+      'Drill Peck',
+    );
     expect(
       getDamageAppliedEvent(paralysisTurn.events, PLAYER_TWO_ID).damage,
     ).toBeGreaterThan(0);
     expect(
       paralysisTurn.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(false);
   });

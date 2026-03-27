@@ -22,7 +22,8 @@ export function calculateEffectiveAccuracy(
 ) {
   const attackerModifier = getAccuracyStageModifier(attackerAccuracyStage);
   const defenderModifier = getAccuracyStageModifier(defenderEvasionStage);
-  const rawChance = (moveAccuracy / 100) * (attackerModifier / defenderModifier);
+  const rawChance =
+    (moveAccuracy / 100) * (attackerModifier / defenderModifier);
 
   return Math.max(0, Math.min(1, rawChance));
 }

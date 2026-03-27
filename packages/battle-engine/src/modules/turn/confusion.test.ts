@@ -24,13 +24,15 @@ describe('turn confusion status effect', () => {
 
     expect(
       events.some(
-        (event) => event.type === 'attack.confused' && event.playerId === PLAYER_ONE_ID,
+        (event) =>
+          event.type === 'attack.confused' && event.playerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(false);
     expect(fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses).toEqual([
@@ -69,10 +71,13 @@ describe('turn confusion status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
-    expect(fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses).toEqual([]);
+    expect(fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses).toEqual(
+      [],
+    );
   });
 
   it('keeps confusion active against a faster opponent until the confused pokemon begins its move', () => {
@@ -112,10 +117,13 @@ describe('turn confusion status effect', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_ONE_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
-    expect(fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses).toEqual([]);
+    expect(fixture.getActivePokemon(PLAYER_ONE_ID).volatileStatuses).toEqual(
+      [],
+    );
   });
 
   it('waits for a replacement and then lets the opposing queued attack hit that replacement', () => {
@@ -135,21 +143,28 @@ describe('turn confusion status effect', () => {
     ];
     fixture.setActivePokemonHealth(PLAYER_ONE_ID, 1);
 
-    const interruptedTurn = fixture.resolveAttackTurn('Strength', 'Sludge Bomb');
+    const interruptedTurn = fixture.resolveAttackTurn(
+      'Strength',
+      'Sludge Bomb',
+    );
 
     expect(
       interruptedTurn.events.some(
-        (event) => event.type === 'pokemon.fainted' && event.playerId === PLAYER_ONE_ID,
+        (event) =>
+          event.type === 'pokemon.fainted' && event.playerId === PLAYER_ONE_ID,
       ),
     ).toBe(true);
     expect(
       interruptedTurn.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_TWO_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_TWO_ID,
       ),
     ).toBe(false);
     expect(interruptedTurn.pendingReplacementPlayers).toEqual([PLAYER_ONE_ID]);
-    expect(interruptedTurn.suspendedTurn?.remainingAction.playerId).toBe(PLAYER_TWO_ID);
+    expect(interruptedTurn.suspendedTurn?.remainingAction.playerId).toBe(
+      PLAYER_TWO_ID,
+    );
     expect(
       interruptedTurn.events.some((event) => event.type === 'turn.resolved'),
     ).toBe(false);

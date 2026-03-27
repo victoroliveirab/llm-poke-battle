@@ -109,7 +109,8 @@ describe('select_party reasoning requirement', () => {
 
   it('returns and stores party reasoning, exposes it in debug snapshots only', async () => {
     const setup = await setupPartySelection();
-    const p1Reason = 'Charizard gives immediate pressure and flexible coverage.';
+    const p1Reason =
+      'Charizard gives immediate pressure and flexible coverage.';
     const p2Reason = 'Raichu is the fastest backup for cleanup turns.';
     const p3Reason = 'Nidoking is the bulky pivot into electric threats.';
     const leadReason =
@@ -144,8 +145,9 @@ describe('select_party reasoning requirement', () => {
       throw new Error('Expected room for reasoning assertions.');
     }
 
-    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)
-      ?.playerId;
+    const player1Id = setup.player1Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
     if (!player1Id) {
       throw new Error('Expected player 1 membership in setup.');
     }
@@ -182,9 +184,14 @@ describe('select_party reasoning requirement', () => {
       throw new Error('Expected debug snapshots route response.');
     }
     if (debugResponse.status !== 200) {
-      throw new Error(`Expected debug snapshots status 200, got ${debugResponse.status}.`);
+      throw new Error(
+        `Expected debug snapshots status 200, got ${debugResponse.status}.`,
+      );
     }
-    const debugPayload = (await debugResponse.json()) as Record<string, unknown>;
+    const debugPayload = (await debugResponse.json()) as Record<
+      string,
+      unknown
+    >;
     const reasoningEntries = debugPayload.partySelectionReasoning as Array<
       Record<string, unknown>
     >;
@@ -289,16 +296,20 @@ describe('select_party reasoning requirement', () => {
       { sessionState: setup.player1Session },
     );
     expect(secondStartResponse.isError).toBe(true);
-    expect(secondStartResponse.content[0]?.text).toContain('Game already started.');
+    expect(secondStartResponse.content[0]?.text).toContain(
+      'Game already started.',
+    );
 
     const room = getRoom(setup.roomHandle);
     if (!room) {
       throw new Error('Expected room for assertions.');
     }
-    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)
-      ?.playerId;
-    const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)
-      ?.playerId;
+    const player1Id = setup.player1Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(
+      setup.roomHandle,
+    )?.playerId;
     if (!player1Id || !player2Id) {
       throw new Error('Expected player ids for assertions.');
     }

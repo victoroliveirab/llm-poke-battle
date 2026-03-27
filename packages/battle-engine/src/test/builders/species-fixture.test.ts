@@ -27,10 +27,9 @@ describe('test species fixture builders', () => {
       ],
     });
 
-    expect(party.getPokemonByName('Raichu')?.moves.map((move) => move.name)).toEqual([
-      'Thunderbolt',
-      'Toxic',
-    ]);
+    expect(
+      party.getPokemonByName('Raichu')?.moves.map((move) => move.name),
+    ).toEqual(['Thunderbolt', 'Toxic']);
   });
 
   it('rejects unknown attack ids in custom species definitions', () => {

@@ -10,7 +10,10 @@ import { PhaseModule, GamePhase } from './modules/phase';
 import { Player, PlayerModule } from './modules/player';
 import { DefaultLoader } from './modules/species/loader';
 import { SpeciesLoader, SpeciesModule } from './modules/species';
-import { cloneVolatileStatus, VolatileStatus } from './modules/turn/status-state';
+import {
+  cloneVolatileStatus,
+  VolatileStatus,
+} from './modules/turn/status-state';
 import { TurnModule } from './modules/turn';
 import { parseAction } from './types';
 
@@ -60,7 +63,9 @@ export class Battle {
   private readonly bus: EventBus;
 
   constructor(params: GameParams) {
-    this.speciesModule = new SpeciesModule(params.speciesLoader ?? new DefaultLoader());
+    this.speciesModule = new SpeciesModule(
+      params.speciesLoader ?? new DefaultLoader(),
+    );
     this.playerModule = new PlayerModule(params.players);
     this.partyModule = new PartyModule(params.partySize);
     this.phaseModule = new PhaseModule();
@@ -154,11 +159,14 @@ export class Battle {
       return party.map((entry) => ({
         ...entry,
         moves: entry.moves.map(sanitizePublicMove),
-        volatileStatuses: sanitizePublicVolatileStatuses(entry.volatileStatuses),
+        volatileStatuses: sanitizePublicVolatileStatuses(
+          entry.volatileStatuses,
+        ),
       }));
     }
 
-    const isPartySelectionPhase = this.phaseModule.getPhase() === 'party_selection';
+    const isPartySelectionPhase =
+      this.phaseModule.getPhase() === 'party_selection';
 
     return party.map((entry, index) => {
       const isRevealedPokemon =

@@ -119,7 +119,9 @@ export function executeMove(params: ExecuteMoveParams) {
     return { defenderFainted: false };
   }
 
-  const isStatusOnlyMove = !move.effects.some((effect) => effect.kind === 'damage');
+  const isStatusOnlyMove = !move.effects.some(
+    (effect) => effect.kind === 'damage',
+  );
   let stageEffectsEncountered = false;
   let appliedAtLeastOneStage = false;
 
@@ -140,7 +142,11 @@ export function executeMove(params: ExecuteMoveParams) {
       continue;
     }
 
-    if (isStatusOnlyMove && stageEffectsEncountered && !appliedAtLeastOneStage) {
+    if (
+      isStatusOnlyMove &&
+      stageEffectsEncountered &&
+      !appliedAtLeastOneStage
+    ) {
       emitAttackMissed(
         params.events,
         params.attackerAction,

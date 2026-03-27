@@ -19,7 +19,8 @@ describe('move: Body Slam', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(
@@ -53,7 +54,8 @@ describe('move: Body Slam', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(
@@ -66,7 +68,8 @@ describe('move: Body Slam', () => {
     ).toBe(false);
     expect(
       events.some(
-        (event) => event.type === 'pokemon.fainted' && event.playerId === 'player-two',
+        (event) =>
+          event.type === 'pokemon.fainted' && event.playerId === 'player-two',
       ),
     ).toBe(true);
   });
@@ -88,7 +91,8 @@ describe('move: Body Slam', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(

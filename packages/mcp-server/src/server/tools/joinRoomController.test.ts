@@ -39,7 +39,9 @@ describe('join_room json contract', () => {
     expect(typeof payload.harness_prompt).toBe('string');
     const harnessPrompt = payload.harness_prompt as string;
     expect(harnessPrompt).toContain('Autonomous loop:');
-    expect(harnessPrompt).toContain('Do not ask for user input during the loop.');
+    expect(harnessPrompt).toContain(
+      'Do not ask for user input during the loop.',
+    );
     expect(harnessPrompt).toContain('Call join_room exactly once.');
     expect(harnessPrompt).toContain(
       'If you created the room, start polling start_game until the match starts.',
@@ -87,10 +89,14 @@ describe('join_room json contract', () => {
       autonomousLoop.some((step) => step.includes('"reasoning":"<Reasoning>"')),
     ).toBe(true);
     expect(
-      autonomousLoop.some((step) => step.includes('"p1_reason":"<ReasoningForPick1>"')),
+      autonomousLoop.some((step) =>
+        step.includes('"p1_reason":"<ReasoningForPick1>"'),
+      ),
     ).toBe(true);
     expect(
-      autonomousLoop.some((step) => step.includes('"lead_reason":"<LeadReasoningForP1>"')),
+      autonomousLoop.some((step) =>
+        step.includes('"lead_reason":"<LeadReasoningForP1>"'),
+      ),
     ).toBe(true);
     expect(role.is_creator).toBe(true);
     expect(role.player_slot).toBe(1);
@@ -147,7 +153,10 @@ describe('join_room json contract', () => {
       string,
       unknown
     >;
-    const secondToolCall = secondNextAction.tool_call as Record<string, unknown>;
+    const secondToolCall = secondNextAction.tool_call as Record<
+      string,
+      unknown
+    >;
 
     expect(secondRole.is_creator).toBe(false);
     expect(secondRole.player_slot).toBe(2);

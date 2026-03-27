@@ -41,7 +41,9 @@ describe('party status state', () => {
   it('copies attack catalog data into party move state on construction', () => {
     const party = createParty();
     const charizard = party.getPokemonByName('Charizard');
-    const firePunch = charizard?.moves.find((move) => move.name === 'Fire Punch');
+    const firePunch = charizard?.moves.find(
+      (move) => move.name === 'Fire Punch',
+    );
 
     expect(firePunch).toEqual({
       accuracy: 100,
@@ -160,7 +162,9 @@ describe('party status state', () => {
   it('applies a major status', () => {
     const party = createParty();
 
-    expect(party.applyMajorStatus('Charizard', { kind: 'paralysis' })).toBe(true);
+    expect(party.applyMajorStatus('Charizard', { kind: 'paralysis' })).toBe(
+      true,
+    );
     expect(party.getPokemonByName('Charizard')?.majorStatus).toEqual({
       kind: 'paralysis',
     });
@@ -274,7 +278,11 @@ describe('party status state', () => {
 
     const snapshot = party.all();
     const active = snapshot[0];
-    if (!active || active.majorStatus === null || active.majorStatus.kind !== 'sleep') {
+    if (
+      !active ||
+      active.majorStatus === null ||
+      active.majorStatus.kind !== 'sleep'
+    ) {
       throw new Error('Expected Charizard to be asleep in the snapshot.');
     }
 
@@ -300,7 +308,9 @@ describe('party status state', () => {
       active.majorStatus === null ||
       active.majorStatus.kind !== 'badly-poisoned'
     ) {
-      throw new Error('Expected Charizard to be badly poisoned in the snapshot.');
+      throw new Error(
+        'Expected Charizard to be badly poisoned in the snapshot.',
+      );
     }
 
     active.majorStatus.turnsElapsed = 4;

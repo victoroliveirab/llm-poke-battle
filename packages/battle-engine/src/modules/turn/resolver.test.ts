@@ -20,7 +20,8 @@ describe('turn resolver', () => {
     expect(
       result.events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === PLAYER_TWO_ID,
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === PLAYER_TWO_ID,
       ),
     ).toBe(false);
     expect(result.pendingReplacementPlayers).toEqual([PLAYER_TWO_ID]);
@@ -186,7 +187,8 @@ describe('turn resolver', () => {
     ).toBe(true);
     expect(
       result.events.some(
-        (event) => event.type === 'pokemon.fainted' && event.playerId === PLAYER_TWO_ID,
+        (event) =>
+          event.type === 'pokemon.fainted' && event.playerId === PLAYER_TWO_ID,
       ),
     ).toBe(true);
   });
@@ -281,7 +283,9 @@ describe('turn resolver', () => {
     );
 
     const playerOneParty = fixture.simulatedParties.get(PLAYER_ONE_ID);
-    const benchedCharizard = playerOneParty?.find((pokemon) => pokemon.name === 'Charizard');
+    const benchedCharizard = playerOneParty?.find(
+      (pokemon) => pokemon.name === 'Charizard',
+    );
 
     expect(
       result.events.some(
@@ -304,7 +308,10 @@ describe('turn resolver', () => {
       ],
     });
     const badlyPoisonedPokemon = fixture.getActivePokemon(PLAYER_TWO_ID);
-    badlyPoisonedPokemon.majorStatus = { kind: 'badly-poisoned', turnsElapsed: 1 };
+    badlyPoisonedPokemon.majorStatus = {
+      kind: 'badly-poisoned',
+      turnsElapsed: 1,
+    };
     const expectedFirstDamage = Math.floor(badlyPoisonedPokemon.stats.hp / 16);
     const expectedSecondDamage = Math.floor(
       (badlyPoisonedPokemon.stats.hp * 2) / 16,
@@ -372,7 +379,9 @@ describe('turn resolver', () => {
     );
 
     const playerOneParty = fixture.simulatedParties.get(PLAYER_ONE_ID);
-    const benchedCharizard = playerOneParty?.find((pokemon) => pokemon.name === 'Charizard');
+    const benchedCharizard = playerOneParty?.find(
+      (pokemon) => pokemon.name === 'Charizard',
+    );
 
     expect(
       switchOutTurn.events.some(

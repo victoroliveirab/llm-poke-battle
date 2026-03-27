@@ -100,6 +100,194 @@ describe('applyStatusEffect', () => {
     ).toBe(true);
   });
 
+  it('applies infatuation to opposite-gender targets', () => {
+    const context = createContext([0, 0], {
+      attackerGender: 'female',
+      defenderGender: 'male',
+      move: {
+        name: 'Attract',
+        type: 'normal',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'volatile-status',
+          status: 'infatuation',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.volatileStatuses).toEqual([
+      { kind: 'infatuation' },
+    ]);
+    expect(
+      context.events.some(
+        (event) =>
+          event.type === 'pokemon.volatile_status_changed' &&
+          event.playerId === PLAYER_TWO_ID &&
+          event.status.kind === 'infatuation' &&
+          event.active === true,
+      ),
+    ).toBe(true);
+  });
+
+  it('fails to apply infatuation to same-gender targets', () => {
+    const context = createContext([0], {
+      attackerGender: 'male',
+      defenderGender: 'male',
+      move: {
+        name: 'Attract',
+        type: 'normal',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'volatile-status',
+          status: 'infatuation',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.volatileStatuses).toEqual([]);
+    expect(context.events).toEqual([
+      {
+        type: 'attack.missed',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        moveName: 'Attract',
+      },
+    ]);
+  });
+
+  it('fails to apply infatuation to genderless targets', () => {
+    const context = createContext([0], {
+      attackerGender: 'female',
+      defenderGender: 'genderless',
+      move: {
+        name: 'Attract',
+        type: 'normal',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'volatile-status',
+          status: 'infatuation',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.volatileStatuses).toEqual([]);
+    expect(context.events).toEqual([
+      {
+        type: 'attack.missed',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        moveName: 'Attract',
+      },
+    ]);
+  });
+
+  it('fails to apply infatuation from genderless attackers', () => {
+    const context = createContext([0], {
+      attackerGender: 'genderless',
+      defenderGender: 'male',
+      move: {
+        name: 'Attract',
+        type: 'normal',
+      },
+    });
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'volatile-status',
+          status: 'infatuation',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.defender.volatileStatuses).toEqual([]);
+    expect(context.events).toEqual([
+      {
+        type: 'attack.missed',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        moveName: 'Attract',
+      },
+    ]);
+  });
+
+  it('emits already_affected when the target is already infatuated', () => {
+    const context = createContext([0], {
+      attackerGender: 'female',
+      defenderGender: 'male',
+      move: {
+        name: 'Attract',
+        type: 'normal',
+      },
+    });
+    context.defender.volatileStatuses = [{ kind: 'infatuation' }];
+
+    applyStatusEffect({
+      effect: {
+        kind: 'apply-status',
+        target: 'opponent',
+        chance: 100,
+        status: {
+          kind: 'volatile-status',
+          status: 'infatuation',
+        },
+      },
+      isStatusOnlyMove: true,
+      context,
+    });
+
+    expect(context.events).toEqual([
+      {
+        type: 'attack.already_affected',
+        playerId: PLAYER_ONE_ID,
+        targetPlayerId: PLAYER_TWO_ID,
+        pokemonName: 'Lapras',
+        targetPokemonName: 'Nidoking',
+        status: 'infatuation',
+        blockingStatus: 'infatuation',
+        moveName: 'Attract',
+      },
+    ]);
+  });
+
   it('keeps already-affected logic for major status-only moves', () => {
     const context = createContext([0]);
     context.defender.majorStatus = { kind: 'paralysis' };
@@ -404,18 +592,33 @@ describe('applyStatusEffect', () => {
 function createContext(
   randomSequence: number[],
   overrides: {
+    attackerGender?: MoveExecutionContext['attacker']['gender'];
     attackerSpecies?: Partial<PokemonSpecies>;
+    defenderGender?: MoveExecutionContext['defender']['gender'];
     defenderSpecies?: Partial<PokemonSpecies>;
     move?: Partial<MoveExecutionContext['move']>;
   } = {},
 ): MoveExecutionContext {
   const simulatedParties = new Map([
-    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, ['Lapras', 'Fearow', 'Charizard'])],
-    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, ['Nidoking', 'Fearow', 'Charizard'])],
+    [
+      PLAYER_ONE_ID,
+      buildPartyEntries(PLAYER_ONE_ID, ['Lapras', 'Fearow', 'Charizard']),
+    ],
+    [
+      PLAYER_TWO_ID,
+      buildPartyEntries(PLAYER_TWO_ID, ['Nidoking', 'Fearow', 'Charizard']),
+    ],
   ]);
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
   let randomIndex = 0;
+
+  if (overrides.attackerGender) {
+    attacker.gender = overrides.attackerGender;
+  }
+  if (overrides.defenderGender) {
+    defender.gender = overrides.defenderGender;
+  }
 
   return {
     simulatedParties,

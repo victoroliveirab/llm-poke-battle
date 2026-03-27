@@ -68,13 +68,13 @@ export class TurnModule implements EngineModule {
         playerId: playerID,
         pokemonName: command.action.payload.newPokemon,
       };
-      return [
-        switchEvent,
-      ];
+      return [switchEvent];
     }
 
     if (this.pendingReplacementPlayers.size > 0) {
-      throw new Error('Waiting for replacement switch before the next turn can start.');
+      throw new Error(
+        'Waiting for replacement switch before the next turn can start.',
+      );
     }
 
     if (this.pendingActions.has(playerID)) {
@@ -118,7 +118,9 @@ export class TurnModule implements EngineModule {
     const actionB = this.pendingActions.get(playerB.id);
 
     if (!actionA || !actionB) {
-      throw new Error('Both players must submit an action before turn resolution.');
+      throw new Error(
+        'Both players must submit an action before turn resolution.',
+      );
     }
 
     const simulatedParties = new Map([
@@ -168,9 +170,7 @@ export class TurnModule implements EngineModule {
         playerId: replacementAction.playerId,
         pokemonName: replacementAction.action.payload.newPokemon,
       };
-      return [
-        switchEvent,
-      ];
+      return [switchEvent];
     }
 
     const players = context.players.getPlayers();
@@ -220,7 +220,9 @@ export class TurnModule implements EngineModule {
       }
 
       const attackName = action.payload.attackName;
-      const move = activePokemon.moves.find((entry) => entry.name === attackName);
+      const move = activePokemon.moves.find(
+        (entry) => entry.name === attackName,
+      );
 
       if (!move) {
         throw new InvalidMoveError(

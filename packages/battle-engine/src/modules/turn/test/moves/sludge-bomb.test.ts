@@ -19,7 +19,8 @@ describe('move: Sludge Bomb', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(
@@ -53,7 +54,8 @@ describe('move: Sludge Bomb', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(

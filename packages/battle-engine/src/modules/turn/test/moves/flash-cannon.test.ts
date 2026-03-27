@@ -51,7 +51,9 @@ describe('move: Flash Cannon', () => {
     });
 
     const { events } = fixture.execute('Flash Cannon', 'Growl');
-    const damageIndex = events.findIndex((event) => event.type === 'damage.applied');
+    const damageIndex = events.findIndex(
+      (event) => event.type === 'damage.applied',
+    );
     const stageIndex = events.findIndex(
       (event) =>
         event.type === 'battle.stat_stage_changed' &&
@@ -118,7 +120,8 @@ describe('move: Flash Cannon', () => {
     expect(
       events.some(
         (event) =>
-          event.type === 'damage.applied' && event.sourcePlayerId === 'player-one',
+          event.type === 'damage.applied' &&
+          event.sourcePlayerId === 'player-one',
       ),
     ).toBe(true);
     expect(

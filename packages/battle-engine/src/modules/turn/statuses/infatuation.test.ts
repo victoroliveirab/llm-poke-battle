@@ -5,7 +5,7 @@ import {
   PLAYER_ONE_ID,
   PLAYER_TWO_ID,
 } from '../test/builders/shared';
-import { freezeStatusHandler } from './freeze';
+import { infatuationStatusHandler } from './infatuation';
 import { MoveStatusContext } from './types';
 
 function createMoveStatusContext(randomValue: number): MoveStatusContext {
@@ -22,7 +22,7 @@ function createMoveStatusContext(randomValue: number): MoveStatusContext {
   const attacker = getActivePokemon(simulatedParties, PLAYER_ONE_ID);
   const defender = getActivePokemon(simulatedParties, PLAYER_TWO_ID);
 
-  attacker.majorStatus = { kind: 'freeze' };
+  attacker.volatileStatuses = [{ kind: 'infatuation' }];
 
   return {
     simulatedParties,
@@ -43,36 +43,16 @@ function createMoveStatusContext(randomValue: number): MoveStatusContext {
   };
 }
 
-describe('freeze status handler', () => {
-  it('thaws at the expected chance and lets the pokemon act', () => {
-    const context = createMoveStatusContext(0.19);
+describe('infatuation status handler', () => {
+  it('blocks the move at the expected chance and emits attack.infatuated', () => {
+    const context = createMoveStatusContext(0.49);
 
-    expect(freezeStatusHandler.beforeMove?.(context)).toEqual({ canAct: true });
-    expect(context.attacker.majorStatus).toBeNull();
-    expect(context.events).toEqual([
-      {
-        type: 'pokemon.major_status_changed',
-        playerId: PLAYER_ONE_ID,
-        pokemonName: 'Charizard',
-        status: {
-          kind: 'freeze',
-        },
-        active: false,
-        sourcePlayerId: PLAYER_ONE_ID,
-        moveName: 'Strength',
-      },
-    ]);
-  });
-
-  it('blocks the move and emits attack.frozen when the thaw roll fails', () => {
-    const context = createMoveStatusContext(0.2);
-
-    expect(freezeStatusHandler.beforeMove?.(context)).toEqual({
+    expect(infatuationStatusHandler.beforeMove?.(context)).toEqual({
       canAct: false,
     });
     expect(context.events).toEqual([
       {
-        type: 'attack.frozen',
+        type: 'attack.infatuated',
         playerId: PLAYER_ONE_ID,
         targetPlayerId: PLAYER_TWO_ID,
         pokemonName: 'Charizard',
@@ -80,5 +60,14 @@ describe('freeze status handler', () => {
         moveName: 'Strength',
       },
     ]);
+  });
+
+  it('allows the move and emits no extra events when the check passes', () => {
+    const context = createMoveStatusContext(0.5);
+
+    expect(infatuationStatusHandler.beforeMove?.(context)).toEqual({
+      canAct: true,
+    });
+    expect(context.events).toEqual([]);
   });
 });

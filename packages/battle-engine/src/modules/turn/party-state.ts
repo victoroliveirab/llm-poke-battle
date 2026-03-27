@@ -50,5 +50,7 @@ export function getPendingReplacementPlayers(
   simulatedParties: Map<string, PartyEntry[]>,
   playerIds: string[],
 ) {
-  return playerIds.filter((playerId) => needsReplacement(simulatedParties, playerId));
+  return playerIds.filter((playerId) =>
+    needsReplacement(simulatedParties, playerId),
+  );
 }

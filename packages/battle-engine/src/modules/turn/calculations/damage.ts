@@ -11,7 +11,9 @@ type DamageParams = {
 
 export function calculateDamage(params: DamageParams) {
   const baseDamage =
-    (((2 * params.level) / 5 + 2) * params.power * (params.attack / params.defense)) /
+    (((2 * params.level) / 5 + 2) *
+      params.power *
+      (params.attack / params.defense)) /
       50 +
     2;
   const randomFactor = params.random() * (1.0 - 0.85) + 0.85;

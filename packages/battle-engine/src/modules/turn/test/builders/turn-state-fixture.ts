@@ -37,15 +37,12 @@ export function createTurnStateFixture(params: TurnStateFixtureParams = {}) {
     ...playerOneParty,
     ...playerTwoParty,
   ]);
-  const simulatedParties = new Map<string, ReturnType<typeof buildPartyEntries>>([
-    [
-      PLAYER_ONE_ID,
-      buildPartyEntries(PLAYER_ONE_ID, playerOneParty),
-    ],
-    [
-      PLAYER_TWO_ID,
-      buildPartyEntries(PLAYER_TWO_ID, playerTwoParty),
-    ],
+  const simulatedParties = new Map<
+    string,
+    ReturnType<typeof buildPartyEntries>
+  >([
+    [PLAYER_ONE_ID, buildPartyEntries(PLAYER_ONE_ID, playerOneParty)],
+    [PLAYER_TWO_ID, buildPartyEntries(PLAYER_TWO_ID, playerTwoParty)],
   ]);
   const random = buildRandomSequence(params.randomSequence ?? []);
 

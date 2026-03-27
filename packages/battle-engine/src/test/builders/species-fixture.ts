@@ -6,7 +6,10 @@ import {
 } from '../../modules/species';
 import { DefaultLoader } from '../../modules/species/loader';
 
-export type TestPokemonSpecies = Omit<PokemonSpecies, 'genderMalePercentage'> & {
+export type TestPokemonSpecies = Omit<
+  PokemonSpecies,
+  'genderMalePercentage'
+> & {
   gender?: PokemonGender;
   genderMalePercentage?: number;
 };
@@ -37,7 +40,9 @@ export function getAttackDefinition(attackId: string) {
 export function getCatalogSpecies(speciesName: string) {
   const species = catalogSpeciesByName.get(speciesName);
   if (!species) {
-    throw new Error(`Pokemon ${speciesName} not found in test fixture catalog.`);
+    throw new Error(
+      `Pokemon ${speciesName} not found in test fixture catalog.`,
+    );
   }
 
   return species;
@@ -66,9 +71,9 @@ export function resolveTestPokemon(pokemon: TestPokemonInput) {
           ? genderMalePercentage
           : gender === 'genderless'
             ? -1
-          : gender === 'female'
-            ? 0
-            : 1,
+            : gender === 'female'
+              ? 0
+              : 1,
     },
   } satisfies ResolvedTestPokemon;
 }
@@ -100,7 +105,9 @@ export function createTestSpeciesLookup(pokemon: TestPokemonInput[]) {
     getSpecies(speciesName: string) {
       const species = byName.get(speciesName);
       if (!species) {
-        throw new Error(`Pokemon ${speciesName} not found in test fixture lookup.`);
+        throw new Error(
+          `Pokemon ${speciesName} not found in test fixture lookup.`,
+        );
       }
 
       return species;

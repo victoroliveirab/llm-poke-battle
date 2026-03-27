@@ -303,6 +303,23 @@
       ]
     },
     {
+      "id": "attract",
+      "name": "Attract",
+      "power": 0,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "normal",
+      "class": "special",
+      "statusEffects": [
+        {
+          "target": "opponent",
+          "kind": "volatile-status",
+          "status": "infatuation",
+          "chance": 100
+        }
+      ]
+    },
+    {
       "id": "toxic",
       "name": "Toxic",
       "power": 0,

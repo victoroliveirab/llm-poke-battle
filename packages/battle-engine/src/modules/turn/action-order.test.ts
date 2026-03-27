@@ -58,8 +58,26 @@ describe('turn action order', () => {
     const ordered = getActionsInSpeedOrder(
       playerOneAction,
       playerTwoAction,
-      buildActivePokemon({ stats: { attack: 100, defense: 100, hp: 100, specialAttack: 100, specialDefense: 100, speed: 120 } }),
-      buildActivePokemon({ stats: { attack: 100, defense: 100, hp: 100, specialAttack: 100, specialDefense: 100, speed: 90 } }),
+      buildActivePokemon({
+        stats: {
+          attack: 100,
+          defense: 100,
+          hp: 100,
+          specialAttack: 100,
+          specialDefense: 100,
+          speed: 120,
+        },
+      }),
+      buildActivePokemon({
+        stats: {
+          attack: 100,
+          defense: 100,
+          hp: 100,
+          specialAttack: 100,
+          specialDefense: 100,
+          speed: 90,
+        },
+      }),
       () => 0.99,
     );
 

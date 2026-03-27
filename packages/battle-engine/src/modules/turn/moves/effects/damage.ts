@@ -9,14 +9,20 @@ import { MoveExecutionContext } from '../types';
 export function applyDamageEffect(context: MoveExecutionContext) {
   const attackStat =
     context.move.class === 'physical'
-      ? getModifiedBattleStat(context.attacker.stats.attack, context.attacker.attackStage)
+      ? getModifiedBattleStat(
+          context.attacker.stats.attack,
+          context.attacker.attackStage,
+        )
       : getModifiedBattleStat(
           context.attacker.stats.specialAttack,
           context.attacker.specialAttackStage,
         );
   const defenseStat =
     context.move.class === 'physical'
-      ? getModifiedBattleStat(context.defender.stats.defense, context.defender.defenseStage)
+      ? getModifiedBattleStat(
+          context.defender.stats.defense,
+          context.defender.defenseStage,
+        )
       : getModifiedBattleStat(
           context.defender.stats.specialDefense,
           context.defender.specialDefenseStage,
@@ -31,7 +37,10 @@ export function applyDamageEffect(context: MoveExecutionContext) {
     context.defenderSpecies.type1,
     context.defenderSpecies.type2,
   );
-  const critical = isCriticalHit(context.attacker.criticalStage, context.random);
+  const critical = isCriticalHit(
+    context.attacker.criticalStage,
+    context.random,
+  );
 
   const baseDamage = calculateDamage({
     level: context.attacker.level,

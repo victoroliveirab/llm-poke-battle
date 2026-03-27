@@ -88,11 +88,11 @@ describe('move: Confuse Ray', () => {
     shortestFixture.execute('Confuse Ray', 'Sludge Bomb');
     longestFixture.execute('Confuse Ray', 'Sludge Bomb');
 
-    expect(shortestFixture.getActivePokemon('player-two').volatileStatuses).toEqual([
-      { kind: 'confusion', turnsRemaining: 1 },
-    ]);
-    expect(longestFixture.getActivePokemon('player-two').volatileStatuses).toEqual([
-      { kind: 'confusion', turnsRemaining: 4 },
-    ]);
+    expect(
+      shortestFixture.getActivePokemon('player-two').volatileStatuses,
+    ).toEqual([{ kind: 'confusion', turnsRemaining: 1 }]);
+    expect(
+      longestFixture.getActivePokemon('player-two').volatileStatuses,
+    ).toEqual([{ kind: 'confusion', turnsRemaining: 4 }]);
   });
 });

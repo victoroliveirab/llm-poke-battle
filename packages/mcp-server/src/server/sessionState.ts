@@ -1,4 +1,4 @@
-import type { RoomMembership } from "./rooms";
+import type { RoomMembership } from './rooms';
 
 export type SessionState = {
   joinedRooms: Map<string, RoomMembership>;
@@ -6,6 +6,6 @@ export type SessionState = {
 
 export function createSessionState(): SessionState {
   return {
-    joinedRooms: new Map<string, RoomMembership>()
+    joinedRooms: new Map<string, RoomMembership>(),
   };
 }

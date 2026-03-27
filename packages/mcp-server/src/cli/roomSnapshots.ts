@@ -108,6 +108,7 @@ type TurnActionTimelineEntrySnapshot =
         | 'paralyzed'
         | 'asleep'
         | 'confused'
+        | 'infatuated'
         | 'frozen'
         | 'already_affected'
         | 'status';
@@ -518,6 +519,12 @@ function printTurnActions(actions: TurnActionsSnapshot) {
           );
           continue;
         }
+        if (entry.outcome === 'infatuated') {
+          console.log(
+            `${entry.publicName}: attack ${entry.attackName} -> did not execute - immobilized by love | reason: ${entry.reasoning}`,
+          );
+          continue;
+        }
         if (entry.outcome === 'frozen') {
           console.log(
             `${entry.publicName}: attack ${entry.attackName} -> did not execute - frozen solid | reason: ${entry.reasoning}`,
@@ -571,9 +578,7 @@ function printTurnActions(actions: TurnActionsSnapshot) {
         continue;
       }
 
-      console.log(
-        `Fainted: ${entry.publicName} - ${entry.pokemonName}`,
-      );
+      console.log(`Fainted: ${entry.publicName} - ${entry.pokemonName}`);
     }
   } else {
     printPlayerTurnAction(actions.player1);
@@ -674,7 +679,9 @@ function formatPokemonStatuses(pokemon: SnapshotPokemon) {
 
   if (pokemon.majorStatus !== null) {
     if (pokemon.majorStatus.kind === 'sleep') {
-      statuses.push(`asleep (${pokemon.majorStatus.turnsRemaining} turns left)`);
+      statuses.push(
+        `asleep (${pokemon.majorStatus.turnsRemaining} turns left)`,
+      );
     } else {
       statuses.push(formatStatusAdjective(pokemon.majorStatus));
     }
@@ -683,6 +690,10 @@ function formatPokemonStatuses(pokemon: SnapshotPokemon) {
   for (const status of pokemon.volatileStatuses) {
     if (status.kind === 'confusion') {
       statuses.push(`confused (${status.turnsRemaining} turns left)`);
+      continue;
+    }
+    if (status.kind === 'infatuation') {
+      statuses.push('infatuated');
       continue;
     }
 
@@ -724,10 +735,16 @@ function formatStatusAdjective(status: MajorStatus | StatusKind | undefined) {
   if (kind === 'confusion') {
     return 'confused';
   }
+  if (kind === 'infatuation') {
+    return 'infatuated';
+  }
   return 'affected';
 }
 
-function formatStatusChange(status: StatusKind | undefined, active: boolean | undefined) {
+function formatStatusChange(
+  status: StatusKind | undefined,
+  active: boolean | undefined,
+) {
   if (status === 'freeze' && active === false) {
     return 'thawed out';
   }
@@ -756,6 +773,9 @@ function formatStatusNoun(status: Exclude<MajorStatus, null> | StatusKind) {
   }
   if (kind === 'badly-poisoned') {
     return 'badly poison';
+  }
+  if (kind === 'infatuation') {
+    return 'infatuation';
   }
   return 'status';
 }

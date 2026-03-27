@@ -128,9 +128,7 @@ describe('move: Stun Spore', () => {
       ),
     ).toBe(true);
     expect(
-      events.some(
-        (event) => event.type === 'pokemon.major_status_changed',
-      ),
+      events.some((event) => event.type === 'pokemon.major_status_changed'),
     ).toBe(false);
   });
 });

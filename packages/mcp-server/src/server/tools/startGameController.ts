@@ -1,5 +1,5 @@
-import { asRequiredString } from "../parse";
-import { errorResult, jsonResult } from "../response";
+import { asRequiredString } from '../parse';
+import { errorResult, jsonResult } from '../response';
 import {
   MAX_PLAYERS_PER_ROOM,
   getRoom,
@@ -7,22 +7,22 @@ import {
   listRoomPlayers,
   markRoomGameStarted,
   resetRoomGame,
-} from "../rooms";
-import type { ToolController } from "../toolController";
+} from '../rooms';
+import type { ToolController } from '../toolController';
 
 export const startGameController: ToolController = {
-  name: "start_game",
+  name: 'start_game',
   description:
-    "Creator-only: start the game in PARTY_SELECTION once the room is full.",
+    'Creator-only: start the game in PARTY_SELECTION once the room is full.',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      room_handle: { type: "string" }
+      room_handle: { type: 'string' },
     },
-    required: ["room_handle"]
+    required: ['room_handle'],
   },
   handle: (args, { sessionState }) => {
-    const roomHandle = asRequiredString(args.room_handle, "room_handle");
+    const roomHandle = asRequiredString(args.room_handle, 'room_handle');
     const room = getRoom(roomHandle);
 
     if (!room) {
@@ -31,28 +31,32 @@ export const startGameController: ToolController = {
 
     const membership = sessionState.joinedRooms.get(room.roomId);
     if (!membership || !room.players.has(membership.playerId)) {
-      return errorResult("You must join this room before starting a game.");
+      return errorResult('You must join this room before starting a game.');
     }
 
     if (room.creatorPlayerId !== membership.playerId) {
-      return errorResult("Only the room creator can start the game.");
+      return errorResult('Only the room creator can start the game.');
     }
 
     if (room.gameStarted) {
-      return errorResult("Game already started.");
+      return errorResult('Game already started.');
     }
 
     if (!isRoomFull(room)) {
-      return errorResult(`Room is not full. A room must have exactly ${MAX_PLAYERS_PER_ROOM} players.`);
+      return errorResult(
+        `Room is not full. A room must have exactly ${MAX_PLAYERS_PER_ROOM} players.`,
+      );
     }
 
     const roomPlayers = listRoomPlayers(room);
     if (roomPlayers.length !== MAX_PLAYERS_PER_ROOM) {
-      return errorResult(`Room is not full. A room must have exactly ${MAX_PLAYERS_PER_ROOM} players.`);
+      return errorResult(
+        `Room is not full. A room must have exactly ${MAX_PLAYERS_PER_ROOM} players.`,
+      );
     }
 
     markRoomGameStarted(room);
     const game = resetRoomGame(room);
     return jsonResult(game.getStateAsPlayer(membership.playerId));
-  }
+  },
 };

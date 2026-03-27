@@ -26,7 +26,9 @@ export class PartyModule implements EngineModule {
     }
 
     if (context.phase.getPhase() !== 'party_selection') {
-      throw new Error('Party selection is closed. The game is already in progress.');
+      throw new Error(
+        'Party selection is closed. The game is already in progress.',
+      );
     }
 
     if (!context.players.hasPlayer(command.playerId)) {
@@ -50,10 +52,12 @@ export class PartyModule implements EngineModule {
       }),
     );
 
-    const events: DomainEvent[] = [{
-      type: 'party.selected',
-      playerId: command.playerId,
-    }];
+    const events: DomainEvent[] = [
+      {
+        type: 'party.selected',
+        playerId: command.playerId,
+      },
+    ];
 
     if (this.parties.size === context.players.count()) {
       events.push({ type: 'party.selection.completed' });

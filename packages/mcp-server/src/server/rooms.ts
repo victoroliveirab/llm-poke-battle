@@ -130,6 +130,7 @@ export type TurnActionTimelineEntrySnapshot =
         | 'paralyzed'
         | 'asleep'
         | 'confused'
+        | 'infatuated'
         | 'frozen'
         | 'already_affected'
         | 'status';
@@ -369,11 +370,7 @@ export function captureRoomTurnSnapshot(
       player2.playerId,
       player2.publicName,
     ),
-    actions: buildTurnActionsSnapshot(
-      player1,
-      player2,
-      resolutionDetails,
-    ),
+    actions: buildTurnActionsSnapshot(player1, player2, resolutionDetails),
     capturedAt: new Date().toISOString(),
   };
 
@@ -508,7 +505,9 @@ export function listPartySelectionReasoningSnapshots(
   room: Room,
 ): PartySelectionReasoningSnapshot[] {
   return listRoomPlayers(room).map((player) => {
-    const reasoning = room.partySelectionReasoningByPlayerId.get(player.playerId);
+    const reasoning = room.partySelectionReasoningByPlayerId.get(
+      player.playerId,
+    );
     if (!reasoning) {
       return {
         playerId: player.playerId,
@@ -633,7 +632,8 @@ function buildTurnActionsSnapshot(
   player2: RoomPlayer,
   resolutionDetails?: TurnResolutionDetails,
 ): TurnActionsSnapshot {
-  const submittedActions = resolutionDetails?.submittedActionsByPlayerId ?? new Map();
+  const submittedActions =
+    resolutionDetails?.submittedActionsByPlayerId ?? new Map();
   const pendingInterTurnSwitches =
     resolutionDetails?.pendingInterTurnSwitchesByPlayerId ?? new Map();
   const preTurnActivePokemon =
@@ -703,7 +703,10 @@ function buildTurnActionsSnapshot(
 
     if (event.type === 'battle.stat_stage_changed') {
       if (!stageEffectTargetBySourcePlayer.has(event.sourcePlayerId)) {
-        stageEffectTargetBySourcePlayer.set(event.sourcePlayerId, event.pokemonName);
+        stageEffectTargetBySourcePlayer.set(
+          event.sourcePlayerId,
+          event.pokemonName,
+        );
       }
       continue;
     }
@@ -906,6 +909,40 @@ function buildTurnActionsSnapshot(
           targetPokemon: event.targetPokemonName,
           damage: event.damage,
           outcome: 'confused',
+          critical: false,
+          reasoning,
+        });
+      }
+      continue;
+    }
+
+    if (event.type === 'attack.infatuated') {
+      const submittedAction = submittedActions.get(event.playerId);
+      const attackName =
+        submittedAction?.type === 'attack'
+          ? submittedAction.attackName
+          : event.moveName;
+      const reasoning =
+        submittedAction?.type === 'attack'
+          ? submittedAction.reasoning
+          : UNRECORDED_ATTACK_REASONING;
+      const sourcePlayer = playersById.get(event.playerId);
+      attackOutcomeByPlayer.set(event.playerId, {
+        attackName,
+        targetPokemon: event.targetPokemonName,
+        damage: 0,
+        executed: false,
+        critical: false,
+      });
+      if (sourcePlayer) {
+        timeline.push({
+          type: 'attack',
+          playerId: event.playerId,
+          publicName: sourcePlayer.publicName,
+          attackName,
+          targetPokemon: event.targetPokemonName,
+          damage: 0,
+          outcome: 'infatuated',
           critical: false,
           reasoning,
         });
@@ -1122,7 +1159,8 @@ function buildTurnActionsSnapshot(
 
     if (
       !timeline.some(
-        (entry) => entry.type === 'attack' && entry.playerId === player.playerId,
+        (entry) =>
+          entry.type === 'attack' && entry.playerId === player.playerId,
       )
     ) {
       const consumedMoveName = consumedAttackByPlayer.get(player.playerId);
@@ -1230,7 +1268,9 @@ function cloneSnapshotPokemon(snapshot: SnapshotPokemon): SnapshotPokemon {
       specialDefense: snapshot.stages.specialDefense,
     },
     majorStatus: snapshot.majorStatus,
-    volatileStatuses: snapshot.volatileStatuses.map((status) => ({ ...status })),
+    volatileStatuses: snapshot.volatileStatuses.map((status) => ({
+      ...status,
+    })),
   };
 }
 

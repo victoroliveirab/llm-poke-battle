@@ -40,7 +40,10 @@ export function buildRandomSequence(sequence: number[]) {
   };
 }
 
-export function buildAttackAction(playerId: string, attackName: string): TurnAction {
+export function buildAttackAction(
+  playerId: string,
+  attackName: string,
+): TurnAction {
   return {
     playerId,
     action: {
@@ -53,7 +56,10 @@ export function buildAttackAction(playerId: string, attackName: string): TurnAct
   };
 }
 
-export function buildSwitchAction(playerId: string, newPokemon: string): TurnAction {
+export function buildSwitchAction(
+  playerId: string,
+  newPokemon: string,
+): TurnAction {
   return {
     playerId,
     action: {
@@ -72,7 +78,8 @@ export function getDamageAppliedEvent(
 ) {
   const damageEvent = events.find(
     (event) =>
-      event.type === 'damage.applied' && event.sourcePlayerId === sourcePlayerId,
+      event.type === 'damage.applied' &&
+      event.sourcePlayerId === sourcePlayerId,
   );
   if (!damageEvent || damageEvent.type !== 'damage.applied') {
     throw new Error(
