@@ -15,6 +15,7 @@ type ApplyStageEffectParams = {
   effect: StageEffect;
   events: DomainEvent[];
   moveName: string;
+  random: () => number;
 };
 
 export function applyStageEffect(params: ApplyStageEffectParams) {
@@ -23,6 +24,14 @@ export function applyStageEffect(params: ApplyStageEffectParams) {
   const targetPlayerId = isSelfTarget
     ? params.attackerAction.playerId
     : params.defenderAction.playerId;
+
+  if (typeof params.effect.chance === 'number') {
+    const chance = Math.min(1, Math.max(0, params.effect.chance / 100));
+    if (chance <= 0 || params.random() >= chance) {
+      return false;
+    }
+  }
+
   const currentStage = getPokemonStageValue(targetPokemon, params.effect.stat);
   const nextStage = getClampedStageAfterDelta(
     currentStage,

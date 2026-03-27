@@ -23,6 +23,7 @@ export type MoveEffect =
       target: 'self' | 'opponent';
       stat: StageStat;
       stages: number;
+      chance?: number;
     }
   | {
       kind: 'apply-status';

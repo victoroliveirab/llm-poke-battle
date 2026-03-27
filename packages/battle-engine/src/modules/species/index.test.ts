@@ -113,6 +113,30 @@ describe('species catalog validation', () => {
     });
   });
 
+  it('loads Flash Cannon from the default attack catalog', () => {
+    const flashCannon = new DefaultLoader()
+      .load()
+      .attacks.find((attack) => attack.id === 'flash-cannon');
+
+    expect(flashCannon).toEqual({
+      id: 'flash-cannon',
+      name: 'Flash Cannon',
+      power: 80,
+      accuracy: 100,
+      pp: 10,
+      type: 'steel',
+      class: 'special',
+      statChanges: [
+        {
+          target: 'opponent',
+          stat: 'specialDefense',
+          stages: -1,
+          chance: 10,
+        },
+      ],
+    });
+  });
+
   it('rejects species with an invalid gender male percentage', () => {
     const module = new SpeciesModule({
       load: () =>

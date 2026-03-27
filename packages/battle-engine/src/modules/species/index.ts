@@ -56,6 +56,7 @@ const attackDefinitionSchema = z.object({
           'specialDefense',
         ]),
         stages: z.number(),
+        chance: statusChanceSchema.optional(),
       }),
     )
     .optional(),

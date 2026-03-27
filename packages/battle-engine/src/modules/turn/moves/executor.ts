@@ -135,11 +135,12 @@ export function executeMove(params: ExecuteMoveParams) {
           effect,
           events: params.events,
           moveName: move.name,
+          random: params.random,
         }) || appliedAtLeastOneStage;
       continue;
     }
 
-    if (stageEffectsEncountered && !appliedAtLeastOneStage) {
+    if (isStatusOnlyMove && stageEffectsEncountered && !appliedAtLeastOneStage) {
       emitAttackMissed(
         params.events,
         params.attackerAction,
@@ -195,7 +196,7 @@ export function executeMove(params: ExecuteMoveParams) {
     });
   }
 
-  if (stageEffectsEncountered && !appliedAtLeastOneStage) {
+  if (isStatusOnlyMove && stageEffectsEncountered && !appliedAtLeastOneStage) {
     emitAttackMissed(
       params.events,
       params.attackerAction,

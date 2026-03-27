@@ -351,6 +351,23 @@
           "stages": -2
         }
       ]
+    },
+    {
+      "id": "flash-cannon",
+      "name": "Flash Cannon",
+      "power": 80,
+      "accuracy": 100,
+      "pp": 10,
+      "type": "steel",
+      "class": "special",
+      "statChanges": [
+        {
+          "target": "opponent",
+          "stat": "specialDefense",
+          "stages": -1,
+          "chance": 10
+        }
+      ]
     }
   ]
 }

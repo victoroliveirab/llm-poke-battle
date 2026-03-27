@@ -5,17 +5,18 @@ import { MoveDefinition, MoveEffect } from './types';
 export function fromPartyMove(move: PartyMove): MoveDefinition {
   const effects: MoveEffect[] = [];
 
+  if (move.power > 0) {
+    effects.push({ kind: 'damage' });
+  }
+
   for (const stageChange of move.statChanges ?? []) {
     effects.push({
       kind: 'modify-stage',
       target: stageChange.target,
       stat: stageChange.stat,
       stages: stageChange.stages,
+      chance: stageChange.chance,
     });
-  }
-
-  if (move.power > 0) {
-    effects.push({ kind: 'damage' });
   }
 
   for (const statusEffect of move.statusEffects ?? []) {
