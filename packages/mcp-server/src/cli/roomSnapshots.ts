@@ -22,6 +22,7 @@ type SnapshotStages = {
 
 type SnapshotPokemon = {
   name: string;
+  gender: 'male' | 'female' | 'genderless';
   hp: number;
   maxHp: number;
   moves: SnapshotMove[];
@@ -654,7 +655,7 @@ function printPokemon(
   includeStages: boolean,
 ) {
   console.log(
-    `${label}: ${pokemon.name} (${pokemon.hp} / ${pokemon.maxHp} HP)`,
+    `${label}: ${pokemon.name} [${pokemon.gender}] (${pokemon.hp} / ${pokemon.maxHp} HP)`,
   );
   console.log(`Status: ${formatPokemonStatuses(pokemon)}`);
   if (includeStages) {

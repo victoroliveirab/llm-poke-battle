@@ -28,6 +28,7 @@ export type SnapshotStages = {
 
 export type SnapshotPokemon = {
   name: string;
+  gender: 'male' | 'female' | 'genderless';
   hp: number;
   maxHp: number;
   moves: SnapshotMove[];
@@ -547,6 +548,7 @@ export function subscribeRoomTurnSnapshots(
 
 type FullPartyEntry = {
   name: string;
+  gender: 'male' | 'female' | 'genderless';
   health: number;
   accuracyStage: number;
   attackStage: number;
@@ -591,6 +593,7 @@ function buildBoardPlayerSnapshot(
 function buildSnapshotPokemon(entry: FullPartyEntry): SnapshotPokemon {
   return {
     name: entry.name,
+    gender: entry.gender,
     hp: entry.health,
     maxHp: entry.stats.hp,
     moves: entry.moves.map((move) => ({
@@ -1209,6 +1212,7 @@ function cloneBoardPlayerSnapshot(
 function cloneSnapshotPokemon(snapshot: SnapshotPokemon): SnapshotPokemon {
   return {
     name: snapshot.name,
+    gender: snapshot.gender,
     hp: snapshot.hp,
     maxHp: snapshot.maxHp,
     moves: snapshot.moves.map((move) => ({

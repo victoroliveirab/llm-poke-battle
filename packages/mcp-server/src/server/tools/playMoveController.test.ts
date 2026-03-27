@@ -12,6 +12,28 @@ type SessionSetup = {
   player2Session: SessionState;
 };
 
+type MutableParty = {
+  getPokemonByName: (name: string) => {
+    moves: Array<{
+      name: string;
+      accuracy: number;
+      power: number;
+      statChanges?: Array<{
+        target: 'self' | 'opponent';
+        stat:
+          | 'accuracy'
+          | 'attack'
+          | 'critical'
+          | 'defense'
+          | 'evasion'
+          | 'specialAttack'
+          | 'specialDefense';
+        stages: number;
+      }>;
+    }>;
+  } | undefined;
+};
+
 function parseJsonPayload(responseText: string): Record<string, unknown> {
   const parsed = JSON.parse(responseText);
   if (!parsed || typeof parsed !== 'object') {
@@ -59,6 +81,72 @@ async function setupGameLoop(): Promise<SessionSetup> {
   };
   await selectPartyController.handle(partyArgs, { sessionState: player1Session });
   await selectPartyController.handle(partyArgs, { sessionState: player2Session });
+
+  return {
+    roomHandle,
+    player1Session,
+    player2Session,
+  };
+}
+
+async function setupGameLoopWithParty(params: {
+  player1Party: {
+    p1: string;
+    p2: string;
+    p3: string;
+  };
+  player2Party: {
+    p1: string;
+    p2: string;
+    p3: string;
+  };
+}): Promise<SessionSetup> {
+  const player1Session = createSessionState();
+  const player2Session = createSessionState();
+
+  const creatorJoin = await joinRoomController.handle(
+    {},
+    { sessionState: player1Session },
+  );
+  const roomHandle = parseJsonPayload(
+    creatorJoin.content[0]?.text ?? '{}',
+  ).room_handle;
+  if (typeof roomHandle !== 'string' || roomHandle.length === 0) {
+    throw new Error('Expected room handle from creator join.');
+  }
+
+  await joinRoomController.handle(
+    { room_handle: roomHandle },
+    { sessionState: player2Session },
+  );
+
+  await startGameController.handle(
+    { room_handle: roomHandle },
+    { sessionState: player1Session },
+  );
+
+  await selectPartyController.handle(
+    {
+      room_handle: roomHandle,
+      ...params.player1Party,
+      p1_reason: `${params.player1Party.p1} leads for early pressure.`,
+      p2_reason: `${params.player1Party.p2} provides bench support.`,
+      p3_reason: `${params.player1Party.p3} covers the remaining matchups.`,
+      lead_reason: `${params.player1Party.p1} is the intended opener.`,
+    },
+    { sessionState: player1Session },
+  );
+  await selectPartyController.handle(
+    {
+      room_handle: roomHandle,
+      ...params.player2Party,
+      p1_reason: `${params.player2Party.p1} leads for early pressure.`,
+      p2_reason: `${params.player2Party.p2} provides bench support.`,
+      p3_reason: `${params.player2Party.p3} covers the remaining matchups.`,
+      lead_reason: `${params.player2Party.p1} is the intended opener.`,
+    },
+    { sessionState: player2Session },
+  );
 
   return {
     roomHandle,
@@ -174,6 +262,62 @@ describe('play_move reasoning requirement', () => {
     ).toBe(true);
   });
 
+  it('includes pokemon gender in turn snapshots', async () => {
+    const setup = await setupGameLoopWithParty({
+      player1Party: {
+        p1: 'Magnezone',
+        p2: 'Raichu',
+        p3: 'Nidoking',
+      },
+      player2Party: {
+        p1: 'Magnezone',
+        p2: 'Raichu',
+        p3: 'Charizard',
+      },
+    });
+
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: 'Thunderbolt is the strongest neutral opening attack.',
+          payload: {
+            attackName: 'Thunderbolt',
+          },
+        },
+      },
+      { sessionState: setup.player1Session },
+    );
+    await playMoveController.handle(
+      {
+        room_handle: setup.roomHandle,
+        action: {
+          type: 'attack',
+          reasoning: 'Mirror the opener with reliable damage.',
+          payload: {
+            attackName: 'Thunderbolt',
+          },
+        },
+      },
+      { sessionState: setup.player2Session },
+    );
+
+    const room = getRoom(setup.roomHandle);
+    if (!room) {
+      throw new Error('Expected room to exist for gender snapshot assertions.');
+    }
+
+    const snapshot = listRoomTurnSnapshots(room, 1)[0];
+    if (!snapshot) {
+      throw new Error('Expected at least one turn snapshot.');
+    }
+
+    expect(snapshot.player1.active.gender).toBe('genderless');
+    expect(snapshot.player2.active.gender).toBe('genderless');
+    expect(snapshot.player1.bench[1]?.gender).toBe('male');
+  });
+
   it('includes burn residual damage in turn snapshots', async () => {
     const setup = await setupGameLoop();
     const room = getRoom(setup.roomHandle);
@@ -260,26 +404,29 @@ describe('play_move reasoning requirement', () => {
     if (!room || !room.game) {
       throw new Error('Expected room game to exist for miss assertions.');
     }
-
-    const speciesModule = (room.game as unknown as {
-      speciesModule: {
-        bySpecies: Map<
-          string,
-          {
-            moves: Array<{
-              name: string;
-              accuracy: number;
-            }>;
-          }
-        >;
-      };
-    }).speciesModule;
-    const charizard = speciesModule.bySpecies.get('Charizard');
-    const strength = charizard?.moves.find((move) => move.name === 'Strength');
-    if (!strength) {
-      throw new Error('Expected Charizard Strength move in species catalog.');
+    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    if (!player1Id || !player2Id) {
+      throw new Error('Expected player ids for miss assertions.');
     }
-    strength.accuracy = 0;
+    const internals = room.game as unknown as {
+      partyModule: {
+        parties: Map<string, MutableParty>;
+      };
+    };
+    const player1Strength = internals.partyModule.parties
+      .get(player1Id)
+      ?.getPokemonByName('Charizard')
+      ?.moves.find((move) => move.name === 'Strength');
+    const player2Strength = internals.partyModule.parties
+      .get(player2Id)
+      ?.getPokemonByName('Charizard')
+      ?.moves.find((move) => move.name === 'Strength');
+    if (!player1Strength || !player2Strength) {
+      throw new Error('Expected active Strength moves in party state.');
+    }
+    player1Strength.accuracy = 0;
+    player2Strength.accuracy = 0;
 
     const player1Reasoning = 'Testing miss handling for player 1.';
     const player2Reasoning = 'Testing miss handling for player 2.';
@@ -354,47 +501,53 @@ describe('play_move reasoning requirement', () => {
     if (!room || !room.game) {
       throw new Error('Expected room game to exist for non-damaging attack assertions.');
     }
-
-    const speciesModule = (room.game as unknown as {
-      speciesModule: {
-        bySpecies: Map<
-          string,
-          {
-            moves: Array<{
-              name: string;
-              accuracy: number;
-              power: number;
-              statChanges?: Array<{
-                target: 'self' | 'opponent';
-                stat:
-                  | 'accuracy'
-                  | 'attack'
-                  | 'critical'
-                  | 'defense'
-                  | 'evasion'
-                  | 'specialAttack'
-                  | 'specialDefense';
-                stages: number;
-              }>;
-            }>;
-          }
-        >;
-      };
-    }).speciesModule;
-    const charizard = speciesModule.bySpecies.get('Charizard');
-    const strength = charizard?.moves.find((move) => move.name === 'Strength');
-    if (!strength) {
-      throw new Error('Expected Charizard Strength move in species catalog.');
+    const player1Id = setup.player1Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    const player2Id = setup.player2Session.joinedRooms.get(setup.roomHandle)?.playerId;
+    if (!player1Id || !player2Id) {
+      throw new Error('Expected player ids for non-damaging attack assertions.');
     }
-    strength.accuracy = 100;
-    strength.power = 0;
-    strength.statChanges = [
+    const internals = room.game as unknown as {
+      partyModule: {
+        parties: Map<string, MutableParty>;
+      };
+    };
+    const player1Strength = internals.partyModule.parties
+      .get(player1Id)
+      ?.getPokemonByName('Charizard')
+      ?.moves.find((move) => move.name === 'Strength');
+    const player2Strength = internals.partyModule.parties
+      .get(player2Id)
+      ?.getPokemonByName('Charizard')
+      ?.moves.find((move) => move.name === 'Strength');
+    if (!player1Strength || !player2Strength) {
+      throw new Error('Expected active Strength moves in party state.');
+    }
+    const replacementStatChange: Array<{
+      target: 'self' | 'opponent';
+      stat:
+        | 'accuracy'
+        | 'attack'
+        | 'critical'
+        | 'defense'
+        | 'evasion'
+        | 'specialAttack'
+        | 'specialDefense';
+      stages: number;
+    }> = [
       {
         target: 'opponent',
         stat: 'defense',
         stages: -1,
       },
     ];
+    player1Strength.accuracy = 100;
+    player1Strength.power = 0;
+    player1Strength.statChanges = replacementStatChange;
+    player2Strength.accuracy = 100;
+    player2Strength.power = 0;
+    player2Strength.statChanges = replacementStatChange.map((change) => ({
+      ...change,
+    }));
 
     const player1Reasoning = 'Use a non-damaging, stat-lowering attack.';
     const player2Reasoning = 'Mirror non-damaging pressure.';
