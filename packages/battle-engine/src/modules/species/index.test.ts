@@ -11,6 +11,7 @@ function buildSpeciesData(overrides: Partial<SpeciesData> = {}): SpeciesData {
         name: 'Thunderbolt',
         power: 90,
         accuracy: 100,
+        makesContact: false,
         pp: 15,
         type: 'electric',
         class: 'special',
@@ -73,6 +74,7 @@ describe('species catalog validation', () => {
       name: 'Thunderbolt',
       power: 90,
       accuracy: 100,
+      makesContact: false,
       pp: 15,
       type: 'electric' as const,
       class: 'special' as const,
@@ -99,6 +101,7 @@ describe('species catalog validation', () => {
       name: 'Toxic',
       power: 0,
       accuracy: 90,
+      makesContact: false,
       pp: 10,
       type: 'poison',
       class: 'special',
@@ -123,6 +126,7 @@ describe('species catalog validation', () => {
       name: 'Flash Cannon',
       power: 80,
       accuracy: 100,
+      makesContact: false,
       pp: 10,
       type: 'steel',
       class: 'special',
@@ -191,6 +195,29 @@ describe('species catalog validation', () => {
     });
 
     expect(() => module.init(null as unknown as GameContext)).not.toThrow();
+  });
+
+  it('rejects attacks that omit makesContact', () => {
+    const module = new SpeciesModule({
+      load: () =>
+        buildSpeciesData({
+          attacks: [
+            {
+              id: 'thunderbolt',
+              name: 'Thunderbolt',
+              power: 90,
+              accuracy: 100,
+              pp: 15,
+              type: 'electric',
+              class: 'special',
+            },
+          ],
+        }),
+    });
+
+    expect(() => module.init(null as unknown as GameContext)).toThrow(
+      'Required',
+    );
   });
 
   it('rejects species with a negative non-sentinel gender male percentage', () => {

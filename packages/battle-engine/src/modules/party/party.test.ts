@@ -49,6 +49,7 @@ describe('party status state', () => {
       accuracy: 100,
       class: 'physical',
       id: 'fire-punch',
+      makesContact: true,
       maxPP: 15,
       name: 'Fire Punch',
       power: 75,

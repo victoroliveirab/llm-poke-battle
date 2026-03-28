@@ -194,6 +194,7 @@ export class Battle {
             ? sanitizePublicMove(move)
             : {
                 accuracy: null,
+                makesContact: null,
                 name: '???',
                 maxPP: null,
                 power: null,
@@ -262,6 +263,7 @@ function sanitizePublicVolatileStatuses(statuses: VolatileStatus[]) {
 function sanitizePublicMove(move: PartyMove) {
   return {
     accuracy: move.accuracy,
+    makesContact: move.makesContact,
     maxPP: move.maxPP,
     name: move.name,
     power: move.power,

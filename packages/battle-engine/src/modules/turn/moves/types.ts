@@ -36,6 +36,7 @@ export type MoveDefinition = {
   accuracy: number;
   class: 'physical' | 'special';
   effects: MoveEffect[];
+  makesContact: boolean;
   name: string;
   power: number;
   type: PokemonType;

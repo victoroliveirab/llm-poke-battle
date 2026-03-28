@@ -14,6 +14,7 @@ export type SnapshotMove = {
   name: string;
   remainingPP: number;
   maxPP: number;
+  makesContact: boolean;
 };
 
 export type SnapshotStages = {
@@ -565,6 +566,7 @@ type FullPartyEntry = {
     name: string;
     remaining: number;
     maxPP: number;
+    makesContact: boolean;
   }>;
 };
 
@@ -599,6 +601,7 @@ function buildSnapshotPokemon(entry: FullPartyEntry): SnapshotPokemon {
       name: move.name,
       remainingPP: move.remaining,
       maxPP: move.maxPP,
+      makesContact: move.makesContact,
     })),
     stages: {
       accuracy: entry.accuracyStage,
@@ -1257,6 +1260,7 @@ function cloneSnapshotPokemon(snapshot: SnapshotPokemon): SnapshotPokemon {
       name: move.name,
       remainingPP: move.remainingPP,
       maxPP: move.maxPP,
+      makesContact: move.makesContact,
     })),
     stages: {
       accuracy: snapshot.stages.accuracy,

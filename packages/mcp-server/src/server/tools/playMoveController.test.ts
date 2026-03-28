@@ -330,6 +330,25 @@ describe('play_move reasoning requirement', () => {
     expect(snapshot.player1.bench[1]?.gender).toBe('male');
   });
 
+  it('includes makesContact in room snapshots', async () => {
+    const setup = await setupGameLoop();
+    const room = getRoom(setup.roomHandle);
+    if (!room) {
+      throw new Error('Expected room to exist for move snapshot assertions.');
+    }
+
+    const snapshot = captureRoomTurnSnapshot(room, 1);
+    const strength = snapshot.player1.active.moves.find(
+      (move) => move.name === 'Strength',
+    );
+    const firePunch = snapshot.player1.active.moves.find(
+      (move) => move.name === 'Fire Punch',
+    );
+
+    expect(strength?.makesContact).toBe(true);
+    expect(firePunch?.makesContact).toBe(true);
+  });
+
   it('records infatuation application and immobilized-by-love outcomes in turn snapshots', async () => {
     const setup = await setupGameLoop();
     const room = getRoom(setup.roomHandle);

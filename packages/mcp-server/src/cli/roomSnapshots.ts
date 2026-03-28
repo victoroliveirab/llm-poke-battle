@@ -8,6 +8,7 @@ type SnapshotMove = {
   name: string;
   remainingPP: number;
   maxPP: number;
+  makesContact: boolean;
 };
 
 type SnapshotStages = {

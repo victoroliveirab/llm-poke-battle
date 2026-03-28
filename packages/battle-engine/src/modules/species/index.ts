@@ -38,6 +38,7 @@ const attackDefinitionSchema = z.object({
   name: z.string(),
   power: z.number(),
   accuracy: z.number(),
+  makesContact: z.boolean(),
   pp: z.number(),
   type: pokemonTypeEnum,
   class: z.enum(['physical', 'special']),

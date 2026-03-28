@@ -178,6 +178,30 @@ describe('turn battle integration', () => {
     expect(opponentBenchPokemon.gender).toBeNull();
   });
 
+  it('exposes makesContact for visible moves and redacts it for hidden moves', () => {
+    const fixture = createBattleFixture();
+    fixture.selectParties(
+      ['Charizard', 'Raichu', 'Nidoking'],
+      ['Nidoking', 'Raichu', 'Charizard'],
+    );
+
+    const state = fixture.game.getStateAsPlayer('player-one') as {
+      player: Array<{ moves: Array<{ name: string; makesContact: boolean }> }>;
+      opponent: Array<
+        { moves: Array<{ name: string; makesContact: boolean | null }> }
+      >;
+    };
+
+    const firePunch = state.player[0]?.moves.find(
+      (move) => move.name === 'Fire Punch',
+    );
+    const hiddenOpponentMove = state.opponent[0]?.moves[0];
+
+    expect(firePunch?.makesContact).toBe(true);
+    expect(hiddenOpponentMove?.name).toBe('???');
+    expect(hiddenOpponentMove?.makesContact).toBeNull();
+  });
+
   it('exposes genderless for visible Magnezone', () => {
     const fixture = createBattleFixture();
     fixture.selectParties(

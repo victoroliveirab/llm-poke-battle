@@ -27,6 +27,7 @@ export function fromPartyMove(move: PartyMove): MoveDefinition {
     accuracy: move.accuracy,
     class: move.class,
     effects,
+    makesContact: move.makesContact,
     name: move.name,
     power: move.power,
     type: move.type,
